@@ -15,8 +15,8 @@ const store = {
   set(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
 };
 // Position-based app: every player name in tactics content is shown as a position.
-const POS = {Dyvane:"GK", Taran:"LCB", Yazan:"RCB", OG:"LB", Noah:"RB", Yosof:"LCDM", Farhad:"RCDM", Mehmet:"LM", Sherif:"RM", Bryce:"LST", Sameed:"RST"};
-const FULL = {Dyvane:"Goalkeeper", Taran:"Left centre-back", Yazan:"Right centre-back", OG:"Left back", Noah:"Right back", Yosof:"Left defensive mid", Farhad:"Right defensive mid", Mehmet:"Left midfield", Sherif:"Right midfield", Bryce:"Left striker", Sameed:"Right striker"};
+const POS = {Dyvane:"GK", Taran:"LCB", Yazan:"RCB", OG:"LB", Noah:"RB", Yosof:"LCDM", Farhad:"RCDM", Mehmet:"LCAM", Sherif:"RCAM", Bryce:"ST", Sameed:"CAM/CF"};
+const FULL = {Dyvane:"Goalkeeper", Taran:"Left centre-back", Yazan:"Right centre-back", OG:"Left back", Noah:"Right back", Yosof:"Left defensive mid", Farhad:"Right defensive mid", Mehmet:"Left attacking mid", Sherif:"Right attacking mid", Bryce:"Striker", Sameed:"Centre forward"};
 const NAME_RE = /\b(Dyvane|Davyne|Taran|Yazan|OG|Noah|Yosof|Farhad|Mehmet|Sherif|Bryce|Sameed)\b/g;
 const pz = s => String(s).replace(NAME_RE, m => POS[m === "Davyne" ? "Dyvane" : m]);
 const posOf = id => POS[id] || id;
@@ -108,11 +108,37 @@ const FT_BOARD = {Bryce:[41,14],Sameed:[59,20],Mehmet:[18,30],Sherif:[82,30],Yos
 const SHAPE = {
   "without-ball": {pos: () => C.DD, title: "Team shape without the ball",
     rules: ["Everyone except Bryce and Sameed stays behind the half line.", "Move as one block toward the ball. Nobody chases.", "Win it when they make a mistake, then a safe first pass."]},
-  "with-ball": {pos: () => Object.assign({}, C.DA, {Yosof:[41,63], Sameed:[59,17]}), title: "Team shape with the ball",
+  "with-ball": {pos: () => WB_SHAPES[0].pos, title: "Team shape with the ball",
     rules: ["Pass sideways or forward. No rushing, no hopeful balls.", "When in doubt, lob the ball centrally behind the defense for Bryce or Sameed to catch.", "Once we're in their half, hold it there."]},
   "final-third": {pos: () => FT_BOARD, title: "How we hold their half",
     rules: ["Bryce on the left of zone 17, Sameed a step deeper as the false 9.", "Mehmet and Sherif at the top of 13 and 15; Yosof at the bottom of 14.", "Farhad, OG and Noah cover behind; Taran, Yazan and Dyvane hold zones 5 and 2. No clean pass? Recycle."]}
 };
+// With-ball shapes, drawn from the head coach's line-up diagrams.
+const WB_SHAPES = [
+  {id:"base", title:"4-2-2-2 base setup", tag:"Base shape", desc:"Our default shape on the ball. ST leads the line with CAM/CF just underneath, LCAM and RCAM hold the width, and LCDM and RCDM sit side by side to screen. Full-backs stay level with the CDMs or just behind them.",
+   pos:{Bryce:[50,16], Sameed:[50,30], Mehmet:[18,60], Sherif:[82,60], Yosof:[38,76], Farhad:[62,76], OG:[12,90], Noah:[88,90], Taran:[37,100], Yazan:[63,100], Dyvane:[50,122]}},
+  {id:"left", title:"Left side on the ball", tag:"4-2-3-1", desc:"When the ball goes to the left, LB steps high and wide with it. LCAM, CAM/CF and RCAM form a three behind the ST. LCDM and RCDM slide left behind the ball, and RB tucks in to make a back three with LCB and RCB.",
+   ball:[16,62], pos:{Bryce:[50,14], Mehmet:[28,40], Sherif:[66,40], Sameed:[46,48], OG:[8,64], Yosof:[28,80], Farhad:[46,80], Taran:[31,100], Yazan:[50,100], Noah:[72,100], Dyvane:[50,122]}},
+  {id:"right", title:"Right side on the ball", tag:"4-2-3-1", desc:"When the ball goes to the right, RB steps high and wide with it. LCAM, CAM/CF and RCAM form a three behind the ST, and RCDM pushes up behind RCAM as the safe option. LB tucks in to make a back three with LCB and RCB.",
+   ball:[86,46], pos:{Bryce:[50,14], Mehmet:[35,40], Sameed:[57,40], Sherif:[72,40], Noah:[92,48], Farhad:[72,74], Yosof:[46,82], OG:[24,100], Taran:[50,100], Yazan:[72,100], Dyvane:[50,122]}}
+];
+function shapeFromPos(pos, label, ball){
+  const f = focus(), occ = {};
+  for (const id in pos){ const z = zoneOf(pos[id][0], pos[id][1]); occ[z] = (occ[z] || false) || id === f; }
+  let s = `<svg viewBox="0 -4 100 148" role="img" aria-label="${esc(label)}">` + baseSvg(true);
+  for (const z in occ){ const [x,y,w,h] = cell(+z); s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${occ[z]?YOU:"#FFFFFF"}" fill-opacity="${occ[z]?.35:.14}" stroke="${occ[z]?YOU:"#FFFFFF"}" stroke-opacity=".8" stroke-width=".8"/>`; }
+  OURS.filter(id => id !== f && pos[id]).concat(f && pos[f] ? [f] : []).forEach(id => { s += ourDot(id, pos[id][0], pos[id][1], f, youLabel(id)); });
+  if (ball) s += `<circle cx="${ball[0]+.5}" cy="${ball[1]+.7}" r="2" fill="#000" fill-opacity=".3"/><circle cx="${ball[0]}" cy="${ball[1]}" r="1.9" fill="#FFFFFF" stroke="#0E1626" stroke-width=".5"/>`;
+  return s + "</svg>";
+}
+function openShape(k){
+  const sh = WB_SHAPES[k], f = focus();
+  const mine = f && sh.pos[f] ? `<div class="target"><b>Your spot · ${esc(posOf(f))}</b>Zone ${zoneOf(sh.pos[f][0], sh.pos[f][1])} in this shape.</div>` : "";
+  dlg.innerHTML = `<div class="full shapefull"><div class="band"><div class="cue">WITH THE BALL · ${esc(sh.tag.toUpperCase())}</div><h2>${esc(sh.title)}</h2><button class="x" type="button" aria-label="Close">&#215;</button></div>
+    <div class="body"><div class="bigpitch">${shapeFromPos(sh.pos, sh.title, sh.ball)}</div><p>${esc(sh.desc)}</p>${mine}</div></div>`;
+  dlg.querySelector(".x").onclick = () => dlg.close();
+  showDialog(sh.title);
+}
 function shapeSvg(v){
   const f = focus(), all = SHAPE[v].pos(), vb = TABS.find(t => t.id === v).view.join(" ");
   const pos = {}; for (const id in all) if (v !== "final-third" || all[id][1] < 96) pos[id] = all[id];
@@ -125,6 +151,15 @@ function shapeSvg(v){
 }
 function renderTactics(){
   const g = $("#tgrid"), v = phase;
+  g.classList.toggle("wb", v === "with-ball");
+  if (v === "with-ball"){
+    let h = `<div class="cta wb-cta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V12m0-1a1.5 1.5 0 0 1 3 0v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L4.5 15a1.5 1.5 0 0 1 2.4-1.8L9 15"/></svg><span><b>Click card to expand</b><small>See each shape full size and where you stand</small></span></div>`;
+    h += `<div class="shapegrid">` + WB_SHAPES.map((sh, k) => `<button type="button" class="tc shape sc" data-k="${k}" aria-label="${esc(sh.title)}, open full size"><div class="hd"><span class="kicker">${esc(sh.tag)}</span><h2>${esc(sh.title)}</h2></div><div class="pv">${shapeFromPos(sh.pos, sh.title, sh.ball)}</div></button>`).join("") + `</div>`;
+    h += `<article class="tc rules"><div class="bd"><h3>Rules with the ball</h3><ol class="seq">${SHAPE[v].rules.map((r, i) => `<li><span class="badge">${i+1}</span><span>${esc(pz(r))}</span></li>`).join("")}</ol></div></article>`;
+    g.innerHTML = h;
+    $$(".sc", g).forEach(b => b.onclick = () => openShape(+b.dataset.k));
+    return;
+  }
   let h = `<article class="tc shape"><div class="hd"><span class="kicker">Team shape</span><h2>${esc(SHAPE[v].title)}</h2></div><div class="pv">${shapeSvg(v)}</div><div class="bd"><h3>Rules</h3><ol class="seq">${SHAPE[v].rules.map((r, i) => `<li><span class="badge">${i+1}</span><span>${esc(pz(r))}</span></li>`).join("")}</ol></div></article>`;
   g.innerHTML = h;
 }
