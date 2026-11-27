@@ -14,8 +14,22 @@ const store = {
   get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
   set(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
 };
-const shortRole = c => c.role.split("·")[0].trim();
-const nick = c => c.id === "OG" ? "OG" : c.name.split(" ")[0];
+// Position-based app: every player name in tactics content is shown as a position.
+const POS = {Dyvane:"GK", Taran:"LCB", Yazan:"RCB", OG:"LB", Noah:"RB", Yosof:"LCDM", Farhad:"RCDM", Mehmet:"LM", Sherif:"RM", Bryce:"LST", Sameed:"RST"};
+const FULL = {Dyvane:"Goalkeeper", Taran:"Left centre-back", Yazan:"Right centre-back", OG:"Left back", Noah:"Right back", Yosof:"Left defensive mid", Farhad:"Right defensive mid", Mehmet:"Left midfield", Sherif:"Right midfield", Bryce:"Left striker", Sameed:"Right striker"};
+const NAME_RE = /\b(Dyvane|Davyne|Taran|Yazan|OG|Noah|Yosof|Farhad|Mehmet|Sherif|Bryce|Sameed)\b/g;
+const pz = s => String(s).replace(NAME_RE, m => POS[m === "Davyne" ? "Dyvane" : m]);
+const posOf = id => POS[id] || id;
+C.CARDS.forEach(c => {
+  c.player = c.name;
+  ["d","a","t"].forEach(k => c[k] = pz(c[k]));
+  c.p.forEach(o => { o.label = pz(o.label); o.hint = pz(o.hint); });
+  if (!c.bench){ c.name = FULL[c.id]; c.role = POS[c.id] + " · " + c.role.split("·").slice(1).join("·").trim(); }
+});
+TABS.forEach(t => { t.goalText = pz(t.goalText); t.scenarios.forEach(s => { s.name = pz(s.name); s.trigger = pz(s.trigger); s.coach = pz(s.coach); s.result.text = pz(s.result.text); s.steps.forEach(st => st.t = pz(st.t)); }); });
+const POSCARDS = C.CARDS.filter(c => !c.bench);
+const shortRole = c => posOf(c.slot);
+const nick = c => c.id === "OG" ? "OG" : c.player.split(" ")[0];
 const YOU = "#D7263D", US = "#3B5BA9", THEM = "#C3CAD8", INK = "#0E1626";
 
 // ---------- who am I ----------
@@ -25,14 +39,14 @@ const focus = () => (me && me !== "coach") ? CARD[me].slot : null;
 
 function meLabel(){
   if (me === "coach") return "Coach view";
-  const c = CARD[me]; return nick(c) + " · " + (c.bench ? "Bench" : shortRole(c));
+  const c = CARD[me]; return nick(c) + " · " + posOf(c.slot);
 }
 
 // ---------- select the player ----------
 function buildSelect(){
   const s = $("#playerSel");
   let h = '<option value="" disabled selected>Choose your name</option><optgroup label="Players">';
-  STARTERS.concat(BENCH).forEach(c => h += `<option value="${c.id}">${esc(c.name)} · ${esc(c.bench ? shortRole(CARD[c.slot]) : shortRole(c))}</option>`);
+  C.CARDS.slice().sort((x, y) => x.player.localeCompare(y.player)).forEach(c => h += `<option value="${c.id}">${esc(c.player)} · ${esc(posOf(c.slot))}</option>`);
   h += '</optgroup><optgroup label="Staff"><option value="coach">Coach view (no highlight)</option></optgroup>';
   s.innerHTML = h;
   s.onchange = () => { s.classList.toggle("empty", !s.value); $("#goBtn").disabled = !s.value; };
@@ -50,7 +64,7 @@ function chooseAndLoad(v){
   $("#welcome").hidden = true;
   const L = $("#loading"), bar = $("#loadBar");
   $("#loadTitle").textContent = v === "coach" ? "Loading the coach view" : `Getting ${nick(CARD[v])}'s match plan ready`;
-  $("#loadSub").textContent = v === "coach" ? "All players, all scenarios" : (CARD[v].bench ? `Your slot: ${CARD[v].slot}. Zones, passes and scenarios` : "Your zones, passing options and scenarios");
+  $("#loadSub").textContent = v === "coach" ? "All players, all scenarios" : `Your position: ${posOf(CARD[v].slot)}. Zones, passes and scenarios`;
   L.classList.remove("fade"); L.hidden = false; bar.style.width = "0";
   $("#meName").textContent = meLabel();
   buildPitch(); renderCards(); enterView(view, true);
@@ -84,10 +98,10 @@ function ourDot(id, x, y, f, labelText){
   const mine = id === f;
   return (mine ? `<circle cx="${x}" cy="${y}" r="6" fill="${YOU}" fill-opacity=".28"/>` : "") +
     `<circle cx="${x}" cy="${y}" r="${mine?3.2:2.8}" fill="${mine?YOU:US}" stroke="#FFFFFF" stroke-width=".8"/>` +
-    `<text x="${x}" y="${y+(mine?7.6:6.6)}" text-anchor="middle" font-size="${mine?4.2:3.3}" font-weight="700" fill="${mine?"#FFD3D9":"#FFFFFF"}" font-family="Barlow, sans-serif" ${halo}>${esc(labelText || id)}</text>`;
+    `<text x="${x}" y="${y+(mine?7.6:6.6)}" text-anchor="middle" font-size="${mine?4.2:3.3}" font-weight="700" fill="${mine?"#FFD3D9":"#FFFFFF"}" font-family="Barlow, sans-serif" ${halo}>${esc(labelText || posOf(id))}</text>`;
 }
 const oppDot = (id, x, y) => `<circle cx="${x}" cy="${y}" r="2.5" fill="${THEM}" stroke="${INK}" stroke-width=".5"/><text x="${x}" y="${y+1.05}" text-anchor="middle" font-size="2.9" font-weight="700" fill="${INK}" font-family="Barlow, sans-serif">${id.slice(1)}</text>`;
-const youLabel = id => (me && me !== "coach" && CARD[me].bench && id === focus()) ? `${nick(CARD[me])} (${id})` : id;
+const youLabel = id => posOf(id);
 
 // ---------- tactics view ----------
 const FT_BOARD = {Bryce:[41,14],Sameed:[59,20],Mehmet:[18,30],Sherif:[82,30],Yosof:[44,43],Farhad:[59,63],OG:[18,89],Noah:[82,89],Taran:[38,98],Yazan:[62,98],Dyvane:[50,119]};
@@ -111,7 +125,7 @@ function shapeSvg(v){
 }
 function renderTactics(){
   const g = $("#tgrid"), v = phase;
-  let h = `<article class="tc shape"><div class="hd"><span class="kicker">Team shape</span><h2>${esc(SHAPE[v].title)}</h2></div><div class="pv">${shapeSvg(v)}</div><div class="bd"><h3>Rules</h3><ol class="seq">${SHAPE[v].rules.map((r, i) => `<li><span class="badge">${i+1}</span><span>${esc(r)}</span></li>`).join("")}</ol></div></article>`;
+  let h = `<article class="tc shape"><div class="hd"><span class="kicker">Team shape</span><h2>${esc(SHAPE[v].title)}</h2></div><div class="pv">${shapeSvg(v)}</div><div class="bd"><h3>Rules</h3><ol class="seq">${SHAPE[v].rules.map((r, i) => `<li><span class="badge">${i+1}</span><span>${esc(pz(r))}</span></li>`).join("")}</ol></div></article>`;
   g.innerHTML = h;
 }
 
@@ -195,12 +209,11 @@ function renderJob(){
   const job = $("#job");
   if (!me || me === "coach"){ job.hidden = true; return; }
   job.hidden = false;
-  const c = CARD[me];
-  $("#jobTitle").textContent = "Your job · " + nick(c);
+  const c = CARD[CARD[me].slot];
+  $("#jobTitle").textContent = "Your job · " + posOf(c.id);
   $("#jobText").textContent = phase === "without-ball" ? c.d : c.a;
   const s = $("#jobSlot");
-  if (c.bench){ s.hidden = false; s.textContent = `On the bench you cover ${c.slot}. The red dot is your slot when you come on.`; }
-  else s.hidden = true;
+  s.hidden = true;
 }
 function buildChips(){
   const box = $("#chips"); box.innerHTML = "";
@@ -300,10 +313,10 @@ function cardSvg(c, m, big){
 }
 function renderCards(){
   const g = $("#grid"); g.innerHTML = "";
-  const all = C.CARDS.slice();
-  if (me && me !== "coach"){ const i = all.findIndex(c => c.id === me); all.unshift(all.splice(i, 1)[0]); }
+  const all = POSCARDS.slice();
+  if (me && me !== "coach"){ const i = all.findIndex(c => c.id === focus()); all.unshift(all.splice(i, 1)[0]); }
   all.forEach(c => {
-    const mine = c.id === me;
+    const mine = c.id === focus();
     const b = document.createElement("button");
     b.type = "button"; b.className = "bc" + (mine ? " mine" : "");
     b.setAttribute("aria-label", `${c.name}, ${c.role}${mine ? ", your card" : ""}. Open full card`);
@@ -317,14 +330,13 @@ function renderCards(){
 }
 const dlg = $("#dlg");
 function openCard(c){
-  const mine = c.id === me;
+  const mine = c.id === focus();
   dlg.innerHTML = `<div class="full${mine ? " mine" : ""}"><div class="band"><div class="cue">${esc(c.cue)}${mine ? " · YOUR CARD" : ""}</div><h2>${esc(c.name)}</h2><div class="rl">${esc(c.role)}</div><button class="x" type="button" aria-label="Close card">&#215;</button></div>
     <div class="body">
       <div class="maps"><figure><figcaption>Without the ball</figcaption>${cardSvg(c, "d", true)}<p>${esc(c.d)}</p></figure><figure><figcaption>With the ball</figcaption>${cardSvg(c, "a", true)}<p>${esc(c.a)}</p></figure></div>
       <div><h3>Passing options</h3><ol class="opts">${c.p.map(o => `<li><span class="num ${o.n === 1 ? "n1" : ""}">${o.n}</span><div><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></div></li>`).join("")}</ol></div>
       <div class="target"><b>Match target</b>${esc(c.t)}</div>
-      ${mine && REPORTS_ENC[c.id] ? `<button class="myrep" type="button" id="cardRep">Open my report card</button>` : ""}
-      ${c.bench ? `<p class="hint">Bench: covers ${esc(c.slot)}'s position, so the zones and passes are ${esc(c.slot)}'s.</p>` : ""}
+      ${mine && REPORTS_ENC[me] ? `<button class="myrep" type="button" id="cardRep">Open my report card</button>` : ""}
     </div></div>`;
   dlg.querySelector(".x").onclick = () => dlg.close();
   const cr = dlg.querySelector("#cardRep"); if (cr) cr.onclick = () => { dlg.close(); openReport(); };
@@ -510,8 +522,8 @@ function buildQuiz(c, w){
   return {q:"What is your match target this week?", answer:c.t, opts:rot([c.t, pick[0], pick[1]], (w.idx + 2) % 3), back:2};
 }
 function buildSteps(){
-  const c = CARD[me], slot = c.slot, w = weekInfo(), f = w.match ? fmtMatch(w.match) : null;
-  const pre = c.bench ? `If you come on for ${slot}: ` : "";
+  const slot = CARD[me].slot, c = CARD[slot], w = weekInfo(), f = w.match ? fmtMatch(w.match) : null;
+  const pre = "";
   const sc = bestScenario(slot);
   const opts = c.p.map(o => `<li><span class="num ${o.n === 1 ? "n1" : ""}">${o.n}</span><span><b>${esc(o.label)}</b> ${esc(o.hint)}</span></li>`).join("");
   gQuiz = buildQuiz(c, w);
