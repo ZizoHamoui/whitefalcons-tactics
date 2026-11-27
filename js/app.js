@@ -445,8 +445,7 @@ function fmtMatch(g){
   const wd = new Date(Date.UTC(y, mo-1, da)).getUTCDay();
   const home = g.home === TEAM, opp = home ? g.away : g.home;
   return {opp, home, day:`${DAYS[wd]} ${da} ${MONTHS[mo-1]}`, dayLong:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][wd],
-    time:`${(hh % 12) || 12}:${mi} ${hh < 12 ? "AM" : "PM"}`, kit: home ? "Home kit: light navy blue shirt, black shorts" : "Away kit: red shirt, black shorts",
-    kitShort: home ? "light navy blue shirt and black shorts" : "red shirt and black shorts", kitColor: home ? "#3B5BA9" : "#D7263D"};
+    time:`${(hh % 12) || 12}:${mi} ${hh < 12 ? "AM" : "PM"}`};
 }
 function countdown(g, nowIso){
   const day = s => Date.UTC(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10));
@@ -465,11 +464,10 @@ function renderWeek(){
   } else {
     const f = fmtMatch(w.match), home = f.home;
     const left = home ? TEAM : f.opp, right = home ? f.opp : TEAM;
-    h += `<article class="mc" id="matchCard" data-kit="${home ? "home" : "away"}">
+    h += `<article class="mc" id="matchCard">
       <div class="mc-top"><span class="mc-label">${w.inWeek ? "This week's match" : "Next match"} · ${esc(w.match.comp)}</span><span class="mc-when">${esc(countdown(w.match, w.now))}</span></div>
       <div class="mc-teams"><div class="mc-team">${crest(left, left === TEAM)}<b>${esc(left.replace(/ FC$/,""))}</b><small>Home</small></div><span class="mc-vs">vs</span><div class="mc-team">${crest(right, right === TEAM)}<b>${esc(right.replace(/ FC$/,""))}</b><small>Away</small></div></div>
       <div class="mc-facts"><div><span>Date</span><b>${esc(f.day)}</b></div><div><span>Kick-off</span><b>${esc(f.time)}</b></div><div><span>Field</span><b>${esc(w.match.field)}</b></div></div>
-      <div class="mc-kit"><i class="kit-shirt" style="background:${f.kitColor}"></i><i class="kit-shorts"></i><span>${esc(f.kit)}</span></div>
     </article>`;
     if (w.after){ const a2 = fmtMatch(w.after); h += `<p class="after">After that: ${esc(a2.day)} vs ${esc(a2.opp)}, ${esc(a2.time)} at ${esc(w.after.field)}</p>`; }
   }
@@ -517,7 +515,7 @@ function buildSteps(){
   const sc = bestScenario(slot);
   const opts = c.p.map(o => `<li><span class="num ${o.n === 1 ? "n1" : ""}">${o.n}</span><span><b>${esc(o.label)}</b> ${esc(o.hint)}</span></li>`).join("");
   gQuiz = buildQuiz(c, w);
-  const s1 = f ? `<p><b>${esc(f.dayLong)} vs ${esc(f.opp)}</b>, kick-off ${esc(f.time)} at ${esc(w.match.field)}.</p><p>Wear the ${esc(f.kitShort)}.</p>` : `<p>No match is scheduled this week. Use the time to refresh your role.</p>`;
+  const s1 = f ? `<p><b>${esc(f.dayLong)} vs ${esc(f.opp)}</b>, kick-off ${esc(f.time)} at ${esc(w.match.field)}.</p>` : `<p>No match is scheduled this week. Use the time to refresh your role.</p>`;
   return [
     {title: f ? "This week's match" : "This week", view:"week", target:"#matchCard",
      body: s1 + (REPORTS_ENC[me] ? `<p class="g-rep">Your report card is ready. Open it from the button at the bottom right, with your access code.</p>` : "")},
