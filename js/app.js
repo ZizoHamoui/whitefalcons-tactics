@@ -98,63 +98,21 @@ const SHAPE = {
   "with-ball": {pos: () => C.DA, title: "Team shape with the ball",
     rules: ["Pass sideways or forward. No rushing, no hopeful balls.", "Nothing lost in our half: in doubt, use option 3.", "Once we're in their half, hold it there."]},
   "final-third": {pos: () => FT_BOARD, title: "How we hold their half",
-    rules: ["Bryce on the left of zone 17, Sameed a step deeper as the false 9.", "Mehmet and Sherif at the top of 13 and 15; Yosof at the bottom of 14.", "Farhad, OG and Noah cover behind. No clean pass? Recycle."]}
+    rules: ["Bryce on the left of zone 17, Sameed a step deeper as the false 9.", "Mehmet and Sherif at the top of 13 and 15; Yosof at the bottom of 14.", "Farhad, OG and Noah cover behind; Taran, Yazan and Dyvane hold zones 5 and 2. No clean pass? Recycle."]}
 };
 function shapeSvg(v){
-  const f = focus(), pos = SHAPE[v].pos(), vb = TABS.find(t => t.id === v).view.join(" ");
+  const f = focus(), all = SHAPE[v].pos(), vb = TABS.find(t => t.id === v).view.join(" ");
+  const pos = {}; for (const id in all) if (v !== "final-third" || all[id][1] < 96) pos[id] = all[id];
   const occ = {};
   for (const id in pos) occ[zoneOf(pos[id][0], pos[id][1])] = (occ[zoneOf(pos[id][0], pos[id][1])] || false) || id === f;
   let s = `<svg viewBox="${vb}" role="img" aria-label="${esc(SHAPE[v].title)}">` + baseSvg(true);
   for (const z in occ){ const [x,y,w,h] = cell(+z); s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${occ[z]?YOU:"#FFFFFF"}" fill-opacity="${occ[z]?.35:.14}" stroke="${occ[z]?YOU:"#FFFFFF"}" stroke-opacity=".8" stroke-width=".8"/>`; }
-  OURS.filter(id => id !== f).concat(f ? [f] : []).forEach(id => { s += ourDot(id, pos[id][0], pos[id][1], f, youLabel(id)); });
-  return s + "</svg>";
-}
-function stepWho(st){
-  if (st.kind === "pass") return `${label(st.from)} to ${label(st.to)}`;
-  if (st.kind === "tackle") return `${label(st.to)} wins it from ${label(st.from)}`;
-  if (st.kind === "shot") return `${label(st.from)} shoots`;
-  if (st.kind === "carry") return `${label(st.from)} carries`;
-  return "Shape";
-}
-const TAGWORD = {forward:"forward", sideways:"sideways", back:"back", cut:"cut out", won:"won", goal:"goal", saved:"saved", wide:"wide", lost:"lost", opp:"their pass", carry:"carry"};
-function scenarioSvg(sc, comp, k){
-  const f = focus(), fin = comp.final, vb = TABS[tabIx].view.join(" ");
-  let s = `<svg viewBox="${vb}" role="img" aria-label="${esc(sc.name)}: passes numbered in order, players shown where they finish"><defs>`;
-  [["a","#F2B134"],["w","#FFFFFF"],["r","#E4574B"]].forEach(([n,c]) => s += `<marker id="m${n}${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="${c}"/></marker>`);
-  s += `</defs>` + baseSvg(false);
-  for (let i = 1; i <= 11; i++) s += oppDot("o"+i, fin["o"+i][0], fin["o"+i][1]);
-  OURS.filter(id => id !== f).forEach(id => s += ourDot(id, fin[id][0], fin[id][1], f));
-  if (f) s += ourDot(f, fin[f][0], fin[f][1], f, youLabel(f));
-  let n = 0;
-  comp.steps.forEach(st => {
-    if (!(st.kind === "pass" || st.kind === "tackle" || st.kind === "shot")) return;
-    n++;
-    const col = TAGCOL[st.tag] || "#FFFFFF", mk = col === "#E4574B" ? "r" : col === "#FFFFFF" ? "w" : "a";
-    const mine = f && (st.from === f || st.to === f);
-    s += `<line x1="${st.bs[0]}" y1="${st.bs[1]}" x2="${st.be[0]}" y2="${st.be[1]}" stroke="${col}" stroke-width="${mine?1.5:(st.kind==="shot"?1.4:1)}" ${st.tag==="sideways"?'stroke-dasharray="2.2 1.6"':""} stroke-linecap="round" marker-end="url(#m${mk}${k})" opacity=".95"/>`;
-    const mx = st.bs[0] + (st.be[0]-st.bs[0])*.5, my = st.bs[1] + (st.be[1]-st.bs[1])*.5;
-    s += `<circle cx="${mx}" cy="${my}" r="2.5" fill="${mine?YOU:"#0B1F3A"}" stroke="${col}" stroke-width=".6"/><text x="${mx}" y="${my+1.05}" text-anchor="middle" font-size="2.9" font-weight="800" fill="#FFFFFF" font-family="Barlow, sans-serif">${n}</text>`;
-  });
+  OURS.filter(id => id !== f && pos[id]).concat(f && pos[f] ? [f] : []).forEach(id => { s += ourDot(id, pos[id][0], pos[id][1], f, youLabel(id)); });
   return s + "</svg>";
 }
 function renderTactics(){
-  const g = $("#tgrid"), v = view, f = focus();
+  const g = $("#tgrid"), v = view;
   let h = `<article class="tc shape"><div class="hd"><span class="kicker">Team shape</span><h2>${esc(SHAPE[v].title)}</h2></div><div class="pv">${shapeSvg(v)}</div><div class="bd"><h3>Rules</h3><ol class="seq">${SHAPE[v].rules.map((r, i) => `<li><span class="badge">${i+1}</span><span>${esc(r)}</span></li>`).join("")}</ol></div></article>`;
-  TABS[tabIx].scenarios.forEach((sc, k) => {
-    const comp = compile(sc);
-    let n = 0;
-    const involved = f && comp.steps.some(st => involves(st, f));
-    const items = comp.steps.map(st => {
-      const isBall = st.kind === "pass" || st.kind === "tackle" || st.kind === "shot";
-      if (isBall) n++;
-      const cls = st.tag === "opp" || st.tag === "lost" ? "r" : (st.tag === "sideways" || st.tag === "back" || !isBall) ? "s" : "f";
-      const mine = f && (st.from === f || st.to === f);
-      return `<li${mine ? ' class="me"' : ""}><span class="badge ${cls}">${isBall ? n : "·"}</span><span><b>${esc(stepWho(st))}</b>${TAGWORD[st.tag] ? " · " + TAGWORD[st.tag] : ""}</span></li>`;
-    }).join("");
-    h += `<article class="tc"><div class="hd"><span class="kicker">Scenario ${k+1}</span><h2>${esc(sc.name)}</h2>${involved ? '<span class="youpill">YOU ARE IN THIS</span>' : ""}</div>
-      <div class="pv">${scenarioSvg(sc, comp, v + k)}</div>
-      <div class="bd"><h3>Trigger</h3><p>${esc(sc.trigger)}</p><h3>Sequence</h3><ol class="seq">${items}</ol><h3>Coaching point</h3><p>${esc(sc.coach)}</p><p class="outcome k-${sc.result.kind}">${esc(sc.result.text)}</p></div></article>`;
-  });
   g.innerHTML = h;
 }
 
