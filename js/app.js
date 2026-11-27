@@ -519,7 +519,7 @@ function buildSteps(){
   const s1 = f ? `<p><b>${esc(f.dayLong)} vs ${esc(f.opp)}</b></p><p class="g-meta">${esc(f.time)} · ${esc(w.match.field)}</p>` : `<p>No match is scheduled this week. Use the time to refresh your role.</p>`;
   return [
     {title: f ? "This week's match" : "This week", view:"week", target:"#matchCard",
-     main: s1 + (REPORTS_ENC[me] ? `<p class="g-rep">Your report card is ready: tap the button at the bottom right.</p>` : ""), more:""},
+     main: s1, more:""},
     {title:"Your job without the ball", view:"tactics", phase:"without-ball", target:"#tgrid .pv", dot:true,
      main:`<p class="g-clamp">${esc(pre + c.d)}</p>`, more:`<p class="g-small">Your red dot shows where you stand.</p>`},
     {title:"Your job with the ball", view:"tactics", phase:"with-ball", target:"#tgrid .pv", dot:true,
