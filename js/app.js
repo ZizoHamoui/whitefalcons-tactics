@@ -93,7 +93,7 @@ const SHAPE = {
   "without-ball": {pos: () => C.DD, title: "Team shape without the ball",
     rules: ["Everyone except Bryce and Sameed stays behind the half line.", "Move as one block toward the ball. Nobody chases.", "Win it when they make a mistake, then a safe first pass."]},
   "with-ball": {pos: () => Object.assign({}, C.DA, {Yosof:[41,63], Sameed:[59,17]}), title: "Team shape with the ball",
-    rules: ["Pass sideways or forward. No rushing, no hopeful balls.", "Nothing lost in our half: in doubt, use option 3.", "Once we're in their half, hold it there."]},
+    rules: ["Pass sideways or forward. No rushing, no hopeful balls.", "When in doubt, lob the ball centrally behind the defense for Bryce or Sameed to catch.", "Once we're in their half, hold it there."]},
   "final-third": {pos: () => FT_BOARD, title: "How we hold their half",
     rules: ["Bryce on the left of zone 17, Sameed a step deeper as the false 9.", "Mehmet and Sherif at the top of 13 and 15; Yosof at the bottom of 14.", "Farhad, OG and Noah cover behind; Taran, Yazan and Dyvane hold zones 5 and 2. No clean pass? Recycle."]}
 };
