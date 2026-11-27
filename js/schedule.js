@@ -138,4 +138,10 @@ const SCHEDULE = [
 "field": "Hjorth 1"
 }
 ];
-const OPP_BADGES = {"Viet Spirit FC": "assets/opp/viet-spirit.png"};
+const OPP_BADGES = {
+  "Viet Spirit FC": "assets/opp/viet-spirit.png",
+  "North Delta FC 91s": "assets/opp/north-delta.png",
+  "SFC Royals": "assets/opp/royals.png",
+  "SFC Pegasus Elite": "assets/opp/pegasus.png",
+  "Surrey Utd Cosmos": "assets/opp/surrey-united.png"
+};
