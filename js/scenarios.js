@@ -5,13 +5,15 @@ const ROLE = {Dyvane:"GK",Taran:"LCB",Yazan:"RCB",OG:"LB",Noah:"RB",Yosof:"CDM",
 const ALLOWED = {
   Dyvane:["Taran","Yazan","OG","Noah"], Taran:["Yosof","OG","Yazan"], Yazan:["Farhad","Noah","Taran"],
   OG:["Yosof","Mehmet","Taran"], Noah:["Farhad","Sherif","Yazan"], Yosof:["Mehmet","Sameed","Farhad"],
-  Farhad:["Yosof","Sherif","Noah"], Mehmet:["Bryce","Yosof","Sameed"], Sherif:["Sameed","Yosof","Farhad"],
+  Farhad:["Yosof","Sherif","Noah"], Mehmet:["Bryce","Yosof","Sameed"], Sherif:["Sameed","Farhad","Noah"],
   Sameed:["Bryce","Sherif","Yosof"], Bryce:["Sameed","Mehmet","Yosof"]
 };
 
 // ---- team shapes ----
 const DEF = {Dyvane:[50,126],OG:[18,104],Taran:[41,104],Yazan:[59,104],Noah:[82,104],Mehmet:[18,82],Yosof:[41,82],Farhad:[59,82],Sherif:[82,82],Bryce:[41,62],Sameed:[59,62]};
-const BUILD = {Dyvane:[50,122],Taran:[38,102],Yazan:[62,102],OG:[18,98],Noah:[82,98],Yosof:[41,80],Farhad:[59,80],Mehmet:[18,76],Sherif:[82,76],Bryce:[41,62],Sameed:[59,62]};
+// With the ball: the head coach's 4-2-2-2 base setup.
+const BASE = {Bryce:[50,16],Sameed:[50,30],Mehmet:[18,60],Sherif:[82,60],Yosof:[38,76],Farhad:[62,76],OG:[12,90],Noah:[88,90],Taran:[37,100],Yazan:[63,100],Dyvane:[50,122]};
+const OPP_WB = {o1:[50,6],o2:[16,32],o3:[38,28],o4:[62,28],o5:[84,32],o6:[14,46],o7:[38,50],o8:[62,50],o9:[86,46],o10:[44,88],o11:[56,88]};
 const FT = {Dyvane:[50,118],Taran:[38,92],Yazan:[62,92],OG:[18,86],Noah:[82,86],Yosof:[44,47],Farhad:[59,63],Mehmet:[20,34],Sherif:[80,34],Bryce:[41,30],Sameed:[58,36]};
 
 const OPP_ATT   = {o1:[50,42],o2:[12,64],o3:[37,54],o4:[63,54],o5:[88,64],o6:[14,74],o7:[38,70],o8:[62,70],o9:[86,74],o10:[36,92],o11:[64,92]};
@@ -92,63 +94,65 @@ const TABS = [
 { id:"with-ball", name:"With the ball", view:[0,-4,100,148],
   goal:"Keep it.", goalText:"Pass sideways or forward, never lose it in our half, and hold the ball in their half.",
   scenarios:[
-  { id:"left", name:"Build down the left", trigger:"Their striker closes Taran, so Yosof is shadowed and Taran takes option 2.",
-    coach:"Every pass is one of the three options on the role card. OG goes inside to Yosof, the safest way up. Mehmet drags their winger, Bryce holds it, Sameed links.",
+  { id:"left", name:"Build down the left", trigger:"Their striker closes LCB and shadows LCDM, so LCB takes option 2 to the LB.",
+    coach:"We start in the 4-2-2-2 base setup and move into the left-side shape. LB steps high and wide, RB tucks into a back three, LCAM comes inside and the three behind the ST give options. Every pass is on the role card.",
     result:{text:"Seven passes, none lost. Ball held in their half.",kind:"good"},
-    setup:{ours:BUILD,opp:OPP_MID,ball:"Dyvane"},
+    setup:{ours:BASE,opp:OPP_WB,ball:"Dyvane"},
     steps:[
-    {b:["pass","Dyvane","Taran"],t:"Dyvane starts short to Taran. Their striker closes Taran and shadows Yosof, so Taran does not force the CDM.",
-     m:{Taran:[38,100],Dyvane:[50,120],OG:[18,95],Noah:[82,96],Yosof:[40,82],Farhad:[59,79],Mehmet:[18,74],o10:[40,90],o11:[57,82],o7:[40,55]}},
-    {b:["pass","Taran","OG"],t:"Option 2: Taran plays wide to OG. OG controls it and waits for support.",
-     m:{OG:[18,93],Taran:[38,98],Mehmet:[18,68],Yosof:[38,78],o10:[30,92],o6:[15,70],o7:[38,60]}},
-    {b:["pass","OG","Yosof"],t:"OG goes inside to Yosof, the safest way up. OG steps up to the bottom of zone 7 and stops there, behind the ball.",
-     m:{OG:[18,89],Mehmet:[18,62],Yosof:[38,78],Farhad:[58,76],Bryce:[40,56],Sameed:[58,56],o10:[28,86],o7:[38,62],o6:[16,68]}},
-    {b:["pass","Yosof","Mehmet"],t:"Yosof plays wide to Mehmet. Their winger has to come out to him, which pulls their block to the left.",
-     m:{Mehmet:[20,60],Yosof:[41,72],Farhad:[59,72],Bryce:[40,50],Sameed:[58,52],Sherif:[80,66],o6:[16,62],o7:[36,60],o2:[16,44]}},
-    {b:["pass","Mehmet","Bryce"],t:"Mehmet finds Bryce's feet. Bryce holds it up, back to goal, while the others come forward.",
-     m:{Bryce:[40,46],Sameed:[56,44],Yosof:[44,64],Farhad:[59,66],Mehmet:[22,54],Sherif:[80,52],o3:[40,38],o7:[40,56]}},
-    {b:["pass","Bryce","Sameed"],t:"Bryce lays it off to Sameed, a step behind him. We are in their half now. Hold it here.",
-     m:{Sameed:[56,40],Mehmet:[20,46],Sherif:[80,46],Yosof:[44,56],Farhad:[59,63],Bryce:[40,42],o8:[58,48]}},
-    {b:["pass","Sameed","Sherif"],t:"Sameed switches to Sherif. The ball moves across their half and nobody rushes.",
-     m:{Sherif:[80,40],Mehmet:[20,40],Bryce:[42,32],Yosof:[44,50],Farhad:[59,62],Sameed:[56,36],o9:[84,46],o8:[56,46]}}
+    {b:["pass","Dyvane","Taran"],t:"GK starts short to LCB. Their striker closes LCB and stands in the lane to LCDM, so LCB doesn't force it.",
+     m:{Taran:[35,100],Dyvane:[50,118],o10:[38,92],o11:[52,86],o7:[38,58]}},
+    {b:["pass","Taran","OG"],t:"Option 2: LCB plays wide to LB, who takes it at the bottom of zone 7.",
+     m:{OG:[10,86],Taran:[34,100],o10:[30,94],o6:[12,70],Yosof:[34,78]}},
+    {b:["pass","OG","Yosof"],t:"LB goes inside to LCDM, then steps high and wide. We move into the left-side shape: RB tucks into a back three, LCAM comes inside, CAM/CF drops between the lines.",sp:["OG"],
+     m:{Yosof:[28,80],OG:[8,64],Farhad:[46,80],Taran:[31,100],Yazan:[50,100],Noah:[72,100],Mehmet:[28,40],Sherif:[66,40],Sameed:[46,48],Bryce:[50,14],o10:[34,92],o6:[16,56],o7:[38,58],o2:[20,40]}},
+    {b:["pass","Yosof","Mehmet"],t:"LCDM plays forward to LCAM, now inside in zone 13. Their full-back has to come out to him.",
+     m:{o2:[24,34],o6:[18,50],Mehmet:[28,41],OG:[8,62],Yosof:[28,78]}},
+    {b:["pass","Mehmet","Bryce"],t:"LCAM finds the ST's feet. The ST holds it up with his back to goal while the three behind him close in.",
+     m:{Bryce:[48,18],o3:[44,24],Sameed:[44,34],Sherif:[66,36],Mehmet:[30,36]}},
+    {b:["pass","Bryce","Sameed"],t:"ST lays it off sideways to CAM/CF, who has come up alongside him. We're in their half now. Hold it here.",
+     m:{Sameed:[55,21],o8:[56,42],Farhad:[46,72],Yosof:[30,72],Bryce:[48,17]}},
+    {b:["pass","Sameed","Sherif"],t:"CAM/CF switches to RCAM. The ball moves across their half and nobody rushes.",
+     m:{Sherif:[70,24],o9:[80,36],o5:[84,26],Sameed:[55,22]}}
     ]},
-  { id:"right", name:"Build down the right", trigger:"Their strikers sit off, so Yazan has time to play the vertical pass to Farhad.",
-    coach:"Farhad is the hub. Noah steps to the bottom of zone 9 only after the ball has gone past him. Sherif and Sameed work the one-two, and Sherif is always available for the return.",
-    result:{text:"Six passes, none lost. One-two completed.",kind:"good"},
-    setup:{ours:BUILD,opp:OPP_MID,ball:"Dyvane"},
+  { id:"right", name:"Build down the right", trigger:"Their strikers sit off, so RCB has time to play into RCDM.",
+    coach:"From the base setup we move into the right-side shape. RB steps high and wide, RCDM pushes up behind RCAM as the safe option, LB tucks into a back three. RCAM and CAM/CF work the one-two.",
+    result:{text:"Seven passes, none lost. One-two completed.",kind:"good"},
+    setup:{ours:BASE,opp:OPP_WB,ball:"Dyvane"},
     steps:[
-    {b:["pass","Dyvane","Yazan"],t:"Dyvane starts to Yazan. Their strikers stay off, so Yazan has time. Farhad shows in front of him.",
-     m:{Yazan:[62,100],Noah:[82,96],Farhad:[60,78],Sherif:[82,74],Dyvane:[50,120],o11:[58,82],o8:[60,54],o10:[44,84]}},
-    {b:["pass","Yazan","Farhad"],t:"Yazan plays the vertical pass to Farhad. He receives on the half-turn, facing forward.",
-     m:{Farhad:[60,76],Yazan:[62,98],Noah:[82,92],Sherif:[82,68],Yosof:[44,76],Sameed:[58,58],Mehmet:[18,64],o8:[62,64],o11:[62,82]}},
-    {b:["pass","Farhad","Sherif"],t:"Farhad plays wide to Sherif. Noah steps up to the bottom of zone 9, behind the ball. Sameed drops to be the one-two partner.",
-     m:{Sherif:[82,64],Noah:[82,89],Farhad:[60,72],Sameed:[60,54],Bryce:[42,52],Mehmet:[20,56],o9:[86,58],o5:[86,42],o8:[64,58]}},
-    {b:["pass","Sherif","Sameed"],t:"Sherif plays into Sameed and moves. He is the one-two partner, always available for the return.",
-     m:{Sameed:[60,52],Sherif:[82,56],Bryce:[42,46],Yosof:[46,66],Farhad:[60,68],Mehmet:[20,50],o8:[64,56],o4:[62,36]}},
-    {b:["pass","Sameed","Sherif"],t:"Sameed gives it straight back into Sherif's run. The one-two takes out their winger.",sp:["Sherif"],
-     m:{Sherif:[82,46],Sameed:[58,48],Bryce:[42,42],Mehmet:[22,46],o9:[84,52],o5:[84,40],Farhad:[60,66]}},
-    {b:["pass","Sherif","Sameed"],t:"Sherif plays it inside to Sameed. We keep the ball in their half and wait for the gap. No hurry.",
-     m:{Sameed:[58,42],Sherif:[80,44],Mehmet:[22,40],Yosof:[46,56],Farhad:[60,64],Bryce:[42,36],o8:[62,46]}}
+    {b:["pass","Dyvane","Yazan"],t:"GK starts to RCB. Their strikers stay off, so RCB has time. RCDM shows in front of him.",
+     m:{Yazan:[64,100],Dyvane:[50,118],Farhad:[62,78],o11:[56,86],o10:[42,86]}},
+    {b:["pass","Yazan","Farhad"],t:"RCB plays forward to RCDM in zone 8, who receives on the half-turn.",
+     m:{Farhad:[63,77],o8:[62,58],o11:[58,90],Noah:[88,88]}},
+    {b:["pass","Farhad","Noah"],t:"RCDM plays wide to RB. The team starts to move into the right-side shape: LB tucks in, the back three slides right.",
+     m:{Noah:[90,82],OG:[24,100],Taran:[50,100],Yazan:[72,100],Yosof:[46,82],Farhad:[70,76],o9:[86,56]}},
+    {b:["carry","Noah"],t:"RB drives high and wide into zone 12. RCDM pushes up behind RCAM; LCAM, CAM/CF and RCAM make a three behind the ST.",sp:["Noah"],
+     m:{Noah:[92,50],Farhad:[72,74],Mehmet:[35,40],Sameed:[57,40],Sherif:[72,40],Bryce:[50,14],o9:[86,58],o5:[86,36],o8:[62,52],o4:[62,30]}},
+    {b:["pass","Noah","Sherif"],t:"RB plays inside to RCAM, then holds the width.",
+     m:{Sherif:[72,40],o5:[82,34],o9:[88,54],Mehmet:[36,38],Bryce:[48,16]}},
+    {b:["pass","Sherif","Sameed"],t:"RCAM plays into CAM/CF and moves. He's the one-two partner, always available for the return.",
+     m:{Sameed:[58,40],Sherif:[76,34],o8:[62,46],o4:[64,32]}},
+    {b:["pass","Sameed","Sherif"],t:"CAM/CF gives it straight back into RCAM's run. The one-two takes out their midfielder. Hold it in their half.",sp:["Sherif"],
+     m:{Sherif:[76,28],Sameed:[56,36],Bryce:[48,16],o5:[86,30],o4:[66,26]}}
     ]},
-  { id:"press", name:"Beat the press", trigger:"Their strikers press high and jump on Taran as soon as he gets it.",
-    coach:"One touch, sideways. Pressure on one side opens space on the other. We never go back to the keeper and never force the CDM. The left opens up because they pressed right.",
+  { id:"press", name:"Beat the press", trigger:"Their strikers press high and jump on LCB as soon as he gets it.",
+    coach:"One touch, sideways. Pressure on one side opens space on the other. We never go back to the GK and never force the CDM. The left opens because they pressed right, and we finish in the left-side shape.",
     result:{text:"Press beaten. Seven passes, none lost.",kind:"good"},
-    setup:{ours:BUILD,opp:OPP_PRESS,ball:"Dyvane"},
+    setup:{ours:BASE,opp:OPP_PRESS,ball:"Dyvane"},
     steps:[
-    {b:["pass","Dyvane","Taran"],t:"Their striker jumps on Taran as soon as he gets it. Yosof's lane is shadowed, so Taran does not force it.",
-     m:{Taran:[38,102],o10:[38,96],o11:[56,96],Yazan:[62,102],OG:[18,98],Noah:[82,98],Farhad:[58,84],Yosof:[42,84]}},
-    {b:["pass","Taran","Yazan"],t:"Taran switches to Yazan before the press lands. One touch, sideways. Their strikers are now on the wrong side.",
-     m:{o10:[48,100],o11:[58,98],Noah:[82,98],Farhad:[62,86],Sherif:[82,74],Dyvane:[50,118]}},
-    {b:["pass","Yazan","Noah"],t:"Yazan plays to Noah. Their winger sprints to press him. Farhad shows inside.",sp:["o9"],
-     m:{Noah:[82,98],o9:[84,88],o11:[68,100],Farhad:[66,86],Sherif:[82,76],Yazan:[62,102]}},
-    {b:["pass","Noah","Farhad"],t:"Noah goes inside to Farhad, past the winger who just pressed him. That press is beaten.",
-     m:{Farhad:[66,84],Noah:[82,94],o9:[87,89],o8:[62,68],Sherif:[82,70],Yosof:[46,82]}},
-    {b:["pass","Farhad","Yosof"],t:"Farhad swings it to Yosof. Their two strikers and their winger are all on the right now. The left is open.",
-     m:{Yosof:[46,82],Mehmet:[18,66],Sherif:[82,68],Bryce:[42,60],Sameed:[58,58],o10:[52,98],o11:[66,98],o7:[34,60]}},
-    {b:["pass","Yosof","Mehmet"],t:"Yosof plays forward to Mehmet, who is free. Space opened on the left because they pressed right.",
-     m:{Mehmet:[18,64],OG:[18,90],Yosof:[44,76],Farhad:[64,80],Bryce:[40,50],Sameed:[58,52],o6:[16,68]}},
-    {b:["pass","Mehmet","Bryce"],t:"Mehmet plays into Bryce. We are through their press and in their half.",
-     m:{Bryce:[40,46],Sameed:[56,44],Mehmet:[20,54],Yosof:[44,64],Farhad:[62,72],Sherif:[80,52],o3:[42,38],o7:[34,58]}}
+    {b:["pass","Dyvane","Taran"],t:"Their striker jumps on LCB as soon as he gets it. The lane to LCDM is shadowed, so LCB doesn't force it.",
+     m:{Taran:[37,102],o10:[38,95],o11:[54,94],Dyvane:[50,120]}},
+    {b:["pass","Taran","Yazan"],t:"LCB switches to RCB before the press lands. One touch, sideways. Their strikers are now on the wrong side.",
+     m:{o10:[46,98],o11:[58,94],Yazan:[64,101]}},
+    {b:["pass","Yazan","Noah"],t:"RCB plays to RB. Their winger sprints to press him. RCDM shows inside.",sp:["o9"],
+     m:{Noah:[88,90],o9:[86,80],o11:[68,98],Farhad:[66,78]}},
+    {b:["pass","Noah","Farhad"],t:"RB goes inside to RCDM, past the winger who just pressed him. That press is beaten.",
+     m:{Farhad:[64,78],Noah:[88,88],o9:[88,84],o8:[62,62]}},
+    {b:["pass","Farhad","Yosof"],t:"RCDM swings it across to LCDM. Their two strikers and their winger are all on the right now. The left is open.",
+     m:{Yosof:[38,78],Mehmet:[20,58],o10:[52,96],o11:[66,96],o7:[34,58]}},
+    {b:["pass","Yosof","Mehmet"],t:"LCDM plays forward to LCAM, who is free. LB steps up behind him: we're moving into the left-side shape.",
+     m:{Mehmet:[22,56],OG:[10,72],Yosof:[34,76],Noah:[74,100],Bryce:[48,18],Sameed:[46,40],o6:[16,62]}},
+    {b:["pass","Mehmet","Bryce"],t:"LCAM plays into the ST. We're through their press and in their half.",
+     m:{Bryce:[48,22],Sameed:[44,34],Mehmet:[26,48],Sherif:[68,42],o3:[42,30],o7:[34,52]}}
     ]}
   ]},
 
