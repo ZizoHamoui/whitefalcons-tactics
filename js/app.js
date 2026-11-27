@@ -39,6 +39,7 @@ function buildSelect(){
   $("#goBtn").onclick = () => { if (s.value) chooseAndLoad(s.value); };
 }
 function openWelcome(){
+  hideDock();
   const s = $("#playerSel");
   if (me){ s.value = me; s.classList.remove("empty"); $("#goBtn").disabled = false; }
   else { s.selectedIndex = 0; s.classList.add("empty"); $("#goBtn").disabled = true; }
@@ -55,10 +56,11 @@ function chooseAndLoad(v){
   buildPitch(); renderCards(); enterView(view, true);
   const wait = reduce ? 300 : 1650;
   requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = "100%"; }));
-  setTimeout(() => { L.classList.add("fade"); setTimeout(() => { L.hidden = true; document.body.style.overflow = ""; }, reduce ? 0 : 350); }, wait);
+  hideDock();
+  setTimeout(() => { L.classList.add("fade"); setTimeout(() => { L.hidden = true; document.body.style.overflow = ""; showDock(); }, reduce ? 0 : 350); }, wait);
 }
 $("#meBtn").onclick = openWelcome;
-document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#welcome").hidden && me){ $("#welcome").hidden = true; document.body.style.overflow = ""; } });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#welcome").hidden && me){ $("#welcome").hidden = true; document.body.style.overflow = ""; showDock(); } });
 
 // ---------- shared pitch drawing ----------
 const COLX = [2,34,66,98], ROWY = [138,115.333,92.667,70,47.333,24.667,2];
@@ -320,12 +322,54 @@ function openCard(c){
       <div class="maps"><figure><figcaption>Without the ball</figcaption>${cardSvg(c, "d", true)}<p>${esc(c.d)}</p></figure><figure><figcaption>With the ball</figcaption>${cardSvg(c, "a", true)}<p>${esc(c.a)}</p></figure></div>
       <div><h3>Passing options</h3><ol class="opts">${c.p.map(o => `<li><span class="num ${o.n === 1 ? "n1" : ""}">${o.n}</span><div><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></div></li>`).join("")}</ol></div>
       <div class="target"><b>Match target</b>${esc(c.t)}</div>
+      ${mine && REPORTS[c.id] ? `<button class="myrep" type="button" id="cardRep">Open my report card</button>` : ""}
       ${c.bench ? `<p class="hint">Bench: covers ${esc(c.slot)}'s position, so the zones and passes are ${esc(c.slot)}'s.</p>` : ""}
     </div></div>`;
   dlg.querySelector(".x").onclick = () => dlg.close();
+  const cr = dlg.querySelector("#cardRep"); if (cr) cr.onclick = () => { dlg.close(); openReport(); };
   if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
 }
 dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+
+// ---------- report card reminder ----------
+const dock = $("#rcDock");
+let dockTimer = 0;
+const hasReport = () => me && me !== "coach" && !!REPORTS[me];
+function setDock(state){ dock.dataset.state = state; $("#rcOpen").setAttribute("aria-label", state === "compact" ? "Open your report card" : "Open your report card: your season review"); }
+function showDock(){
+  if (!hasReport()){ hideDock(); return; }
+  dock.dataset.seen = store.get("wf-rep-seen-" + me) ? "1" : "0";
+  setDock("open"); dock.hidden = false; document.body.classList.add("has-dock");
+  clearTimeout(dockTimer);
+  dockTimer = setTimeout(() => setDock("compact"), 7000);
+}
+function hideDock(){ dock.hidden = true; document.body.classList.remove("has-dock"); clearTimeout(dockTimer); }
+$("#rcMin").onclick = () => { clearTimeout(dockTimer); setDock("compact"); $("#rcOpen").focus(); };
+$("#rcOpen").onclick = () => openReport();
+window.addEventListener("scroll", () => { if (!dock.hidden && dock.dataset.state === "open" && window.scrollY > 120){ clearTimeout(dockTimer); setDock("compact"); } }, {passive: true});
+
+function openReport(){
+  const r = REPORTS[me]; if (!r) return;
+  store.set("wf-rep-seen-" + me, "1"); dock.dataset.seen = "1";
+  clearTimeout(dockTimer); setDock("compact");
+  const s = r.s, f1 = v => v.toFixed(1), f2 = v => v.toFixed(2);
+  const tile = (v, l) => `<div class="tile"><b>${v}</b><span>${l}</span></div>`;
+  dlg.innerHTML = `<div class="full rep"><div class="band"><div class="cue">PLAYER PERFORMANCE REPORT</div><h2>${esc(r.name)}</h2><div class="rl">${esc(r.pos)} · Season to date</div><button class="x" type="button" aria-label="Close report card">&#215;</button></div>
+    <div class="body">
+      <div class="tiles">${tile(s.games,"Games")}${tile(s.minutes,"Minutes")}${tile(f1(s.avgMin),"Avg min")}${tile(f2(s.rating),"Avg rating")}${tile(s.goals,"Goals")}${tile(s.assists,"Assists")}</div>
+      <div class="two">
+        <div><h3>Output and impact</h3><dl><dt>Goal contributions</dt><dd>${s.contrib}</dd><dt>Goals per 90</dt><dd>${f2(s.g90)}</dd><dt>Assists per 90</dt><dd>${f2(s.a90)}</dd><dt>Contributions per 90</dt><dd>${f2(s.c90)}</dd><dt>Impact score / 10</dt><dd>${f2(s.impact)}</dd></dl></div>
+        <div><h3>Availability and discipline</h3><dl><dt>Clean sheets</dt><dd>${s.clean}</dd><dt>Player of the match</dt><dd>${s.pom}</dd><dt>Yellow cards</dt><dd>${s.yellow}</dd><dt>Red cards</dt><dd>${s.red}</dd><dt>Discipline points</dt><dd>${s.disc}</dd></dl></div>
+      </div>
+      <div class="sect good"><h3>Strengths to highlight</h3><ul>${r.strengths.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>
+      <div class="sect work"><h3>Areas for improvement</h3><ul>${r.improve.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>
+      <p class="note">From your coach. Questions about it? Ask at training.</p>
+    </div></div>`;
+  dlg.setAttribute("aria-label", "Report card");
+  dlg.querySelector(".x").onclick = () => dlg.close();
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+}
+dlg.addEventListener("close", () => { dlg.setAttribute("aria-label", "Battle card"); });
 
 // ---------- start ----------
 buildSelect();
@@ -335,6 +379,6 @@ renderCards();
 const h0 = location.hash.slice(1);
 view = null;
 enterView(VIEWS.includes(h0) ? h0 : "tactics");
-if (!me) openWelcome();
+if (!me) openWelcome(); else showDock();
 requestAnimationFrame(frame);
 })();

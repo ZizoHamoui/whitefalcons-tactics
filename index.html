@@ -70,6 +70,14 @@
 
 <dialog id="dlg" aria-label="Battle card"></dialog>
 
+<div class="rc-dock" id="rcDock" data-state="open" hidden>
+  <button class="rc-pill" id="rcOpen" type="button" aria-label="Open your report card">
+    <span class="rc-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h4"/></svg><i class="rc-new"></i></span>
+    <span class="rc-txt"><b>Your report card is ready</b><small>Tap to see your season review</small></span>
+  </button>
+  <button class="rc-min" id="rcMin" type="button" aria-label="Shrink the report card reminder">&#215;</button>
+</div>
+
 <div class="screen" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wTitle" hidden>
   <div class="pick">
     <img class="crest" src="assets/badge.png" alt="" width="58" height="58">
@@ -96,6 +104,7 @@
 <script src="js/cards.js"></script>
 <script src="js/scenarios.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/reports.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

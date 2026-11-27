@@ -217,3 +217,47 @@ dialog::backdrop{background:rgba(14,22,38,.5);backdrop-filter:blur(4px)}
 @keyframes sheen{from{background-position:0% 50%}to{background-position:100% 50%}}
 @keyframes tap{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @media(prefers-reduced-motion:reduce){.cta,.cta svg{animation:none}}
+
+/* ---------- report card reminder (floating, never blocks) ---------- */
+.rc-dock{position:fixed;right:14px;bottom:calc(var(--navh) + 14px + env(safe-area-inset-bottom));z-index:25;display:flex;align-items:center;gap:6px;pointer-events:none}
+.rc-dock>*{pointer-events:auto}
+.rc-pill{display:flex;align-items:center;gap:10px;border:0;border-radius:999px;padding:8px 16px 8px 8px;background:var(--away);color:#fff;cursor:pointer;box-shadow:0 12px 28px rgba(156,42,134,.35);text-align:left;min-height:52px;transition:padding .25s ease,gap .25s ease}
+.rc-ico{position:relative;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center;flex:0 0 auto}
+.rc-ico svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.rc-new{position:absolute;top:-1px;right:-1px;width:11px;height:11px;border-radius:50%;background:#FFD23F;box-shadow:0 0 0 2px #B0287A}
+.rc-dock[data-seen="1"] .rc-new{display:none}
+.rc-txt b{display:block;font-size:14.5px;line-height:1.15}
+.rc-txt small{display:block;font-size:12.5px;opacity:.9}
+.rc-min{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--white);color:var(--mute);font-size:18px;line-height:1;cursor:pointer;box-shadow:var(--shadow)}
+.rc-dock[data-state="compact"] .rc-txt,.rc-dock[data-state="compact"] .rc-min{display:none}
+.rc-dock[data-state="compact"] .rc-pill{padding:8px;gap:0}
+body.has-dock main{padding-bottom:calc(var(--navh) + 96px + env(safe-area-inset-bottom))}
+@media(min-width:900px){
+  .rc-dock{right:24px;bottom:24px}
+  body.has-dock main{padding-bottom:110px}
+}
+@media(prefers-reduced-motion:no-preference){.rc-dock:not([hidden]){animation:rcIn .4s ease both}}
+@keyframes rcIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ---------- report card dialog ---------- */
+.rep .band{background:var(--away)}
+.rep .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media(min-width:560px){.rep .tiles{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.rep .tile{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--soft)}
+.rep .tile b{display:block;font-family:var(--display);font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+.rep .tile span{font-size:11.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--mute);font-weight:700}
+.rep .two{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+@media(min-width:560px){.rep .two{grid-template-columns:1fr 1fr}}
+.rep dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14.5px}
+.rep dt{color:var(--mute)}
+.rep dd{margin:0;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.rep ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.rep li{display:flex;gap:10px;font-size:15px;align-items:flex-start}
+.rep li::before{content:"";flex:0 0 auto;width:10px;height:10px;border-radius:50%;margin-top:6px}
+.rep .good li::before{background:var(--blue)}
+.rep .work li::before{background:var(--red)}
+.rep .sect{border-radius:14px;padding:12px 14px;border:1px solid var(--line)}
+.rep .sect.good{background:linear-gradient(135deg,#EEF3FF,#FFFFFF)}
+.rep .sect.work{background:linear-gradient(135deg,#FFF0F2,#FFFFFF)}
+.rep .note{font-size:13px;color:var(--mute)}
+.myrep{align-self:flex-start;border:0;border-radius:12px;padding:10px 14px;font-weight:700;color:#fff;background:var(--away);cursor:pointer;min-height:44px}
