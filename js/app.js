@@ -150,10 +150,10 @@ function buildPitch(){
 }
 
 // ---------- views ----------
-const VIEWS = ["tactics","simulations","instructions"];
-const PHASES = ["with-ball","without-ball","final-third"];
+const VIEWS = ["tactics","instructions","simulations"];
+const PHASES = ["without-ball","with-ball","final-third"];
 const EYEBROW = {"without-ball":"Without the ball","with-ball":"With the ball","final-third":"Final third"};
-let view = "tactics", phase = PHASES.includes(store.get("wf-phase")) ? store.get("wf-phase") : "with-ball";
+let view = "tactics", phase = PHASES.includes(store.get("wf-phase")) ? store.get("wf-phase") : "without-ball";
 let tabIx = 0, scIx = {}, comp = null, T = 0, lastTs = 0;
 const HOLD = 1600;
 const tabData = () => TABS[tabIx];

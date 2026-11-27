@@ -18,11 +18,11 @@
   <div class="brand"><img class="crest" src="assets/badge.png" alt="White Falcons badge" width="44" height="44"><div><b>White Falcons</b><small>4-2-2-2 · Defend and control</small></div></div>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" type="button" data-view="tactics" aria-selected="true">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 12h16"/><circle cx="12" cy="12" r="2.5"/></svg>Tactics</button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 12h16"/><circle cx="12" cy="12" r="2.5"/></svg>Team Tactics</button>
+    <button class="tab" role="tab" type="button" data-view="instructions" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="11" rx="2"/><rect x="13" y="9" width="8" height="11" rx="2"/></svg>My Instructions</button>
     <button class="tab" role="tab" type="button" data-view="simulations" aria-selected="false">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/></svg>Simulations</button>
-    <button class="tab" role="tab" type="button" data-view="instructions" aria-selected="false">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="11" rx="2"/><rect x="13" y="9" width="8" height="11" rx="2"/></svg>My instructions</button>
   </nav>
   <button class="me" id="meBtn" type="button" aria-label="Change player"><span class="who" id="meName">Pick player</span><span class="sw">Switch</span></button>
 </header>
@@ -30,9 +30,9 @@
 <main>
   <section id="viewSim" aria-live="off">
     <div class="toggle" role="group" aria-label="Phase of play">
-      <button type="button" data-phase="with-ball" aria-pressed="true">With ball</button>
-      <button type="button" data-phase="without-ball" aria-pressed="false">Without ball</button>
-      <button type="button" data-phase="final-third" aria-pressed="false">Final third</button>
+      <button type="button" data-phase="without-ball" aria-pressed="true">Without Ball</button>
+      <button type="button" data-phase="with-ball" aria-pressed="false">With Ball</button>
+      <button type="button" data-phase="final-third" aria-pressed="false">Final Third</button>
     </div>
     <div class="goal" id="goal"><span class="eyebrow" id="goalEyebrow"></span><h1 id="goalWord"></h1><p id="goalText"></p></div>
     <div class="panel job" id="job"><h3 id="jobTitle">Your job</h3><p id="jobText"></p><p class="slot" id="jobSlot" hidden></p></div>
