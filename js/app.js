@@ -1,4 +1,4 @@
-// White Falcons Tactics: welcome picker, looping simulations, battle cards.
+// White Falcons Tactics: player select, loading screen, tactics / simulation views, battle cards.
 (function(){
 "use strict";
 const NS = "http://www.w3.org/2000/svg";
@@ -11,95 +11,159 @@ const STARTERS = C.CARDS.filter(c => !c.bench);
 const BENCH = C.CARDS.filter(c => c.bench);
 const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const store = {
-  get(){ try { return localStorage.getItem("wf-player"); } catch(e){ return null; } },
-  set(v){ try { localStorage.setItem("wf-player", v); } catch(e){} }
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
 };
 const shortRole = c => c.role.split("·")[0].trim();
-const firstName = c => c.name.split(" ")[0];
+const nick = c => c.id === "OG" ? "OG" : c.name.split(" ")[0];
+const YOU = "#FF7A45";
 
 // ---------- who am I ----------
-let me = store.get();
+let me = store.get("wf-player");
 if (me && me !== "coach" && !CARD[me]) me = null;
 const focus = () => (me && me !== "coach") ? CARD[me].slot : null;
+let mode = store.get("wf-mode") === "sim" ? "sim" : "tactics";
 
-function setMe(v){
-  me = v; store.set(v);
-  const c = CARD[v];
-  $("#meName").textContent = v === "coach" ? "Coach view" : (c.id === "OG" ? "OG" : firstName(c)) + " · " + (c.bench ? "Bench" : shortRole(c));
-  closeWelcome();
-  buildPitch(); renderCards(); enterView(view, true);
+function meLabel(){
+  if (me === "coach") return "Coach view";
+  const c = CARD[me]; return nick(c) + " · " + (c.bench ? "Bench" : shortRole(c));
 }
 
-// ---------- welcome ----------
-const WPOS = {Bryce:[34,13],Sameed:[66,13],Mehmet:[14,34],Sherif:[86,34],Yosof:[35,46],Farhad:[65,46],OG:[13,64],Taran:[37,68],Yazan:[63,68],Noah:[87,64],Dyvane:[50,88]};
-let pick = null;
-function buildWelcome(){
-  const wp = $("#wpitch");
-  $$(".pk", wp).forEach(n => n.remove());
-  STARTERS.forEach(c => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "pk"; b.dataset.id = c.id;
-    b.style.left = WPOS[c.id][0] + "%"; b.style.top = WPOS[c.id][1] + "%";
-    b.setAttribute("aria-pressed", "false");
-    b.setAttribute("aria-label", c.name + ", " + shortRole(c));
-    b.innerHTML = `<span class="d">${esc(shortRole(c))}</span><span class="n">${esc(c.id === "OG" ? "OG" : firstName(c))}</span>`;
-    b.onclick = () => choose(c.id);
-    wp.appendChild(b);
-  });
-  const wb = $("#wbench"); wb.innerHTML = "";
-  BENCH.forEach(c => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "bp"; b.dataset.id = c.id; b.setAttribute("aria-pressed", "false");
-    b.innerHTML = `<b>${esc(c.name)}</b><span>Covers ${esc(c.slot)} (${esc(shortRole(CARD[c.slot]))})</span>`;
-    b.onclick = () => choose(c.id);
-    wb.appendChild(b);
-  });
-  $("#goBtn").onclick = () => { if (pick) setMe(pick); };
-  $("#coachBtn").onclick = () => setMe("coach");
-}
-function choose(id){
-  pick = id;
-  $$(".pk,.bp").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === id));
-  const c = CARD[id], go = $("#goBtn");
-  go.disabled = false;
-  go.textContent = `I'm ${c.id === "OG" ? "OG" : firstName(c)} · Let's go`;
+// ---------- select the player ----------
+function buildSelect(){
+  const s = $("#playerSel");
+  let h = '<option value="" disabled selected>Choose your name</option><optgroup label="Starting XI">';
+  STARTERS.forEach(c => h += `<option value="${c.id}">${esc(c.name)} · ${esc(shortRole(c))}</option>`);
+  h += '</optgroup><optgroup label="Bench">';
+  BENCH.forEach(c => h += `<option value="${c.id}">${esc(c.name)} · covers ${esc(c.slot)}</option>`);
+  h += '</optgroup><optgroup label="Staff"><option value="coach">Coach view (no highlight)</option></optgroup>';
+  s.innerHTML = h;
+  s.onchange = () => { s.classList.toggle("empty", !s.value); $("#goBtn").disabled = !s.value; };
+  $("#goBtn").onclick = () => { if (s.value) chooseAndLoad(s.value); };
 }
 function openWelcome(){
-  pick = (me && me !== "coach") ? me : null;
-  $$(".pk,.bp").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === pick));
-  const go = $("#goBtn"); go.disabled = !pick; go.textContent = pick ? `I'm ${pick === "OG" ? "OG" : firstName(CARD[pick])} · Let's go` : "Pick your position";
+  const s = $("#playerSel");
+  if (me){ s.value = me; s.classList.remove("empty"); $("#goBtn").disabled = false; }
+  else { s.selectedIndex = 0; s.classList.add("empty"); $("#goBtn").disabled = true; }
   $("#welcome").hidden = false; document.body.style.overflow = "hidden";
 }
-function closeWelcome(){ $("#welcome").hidden = true; document.body.style.overflow = ""; }
+function chooseAndLoad(v){
+  me = v; store.set("wf-player", v);
+  $("#welcome").hidden = true;
+  const L = $("#loading"), bar = $("#loadBar");
+  $("#loadTitle").textContent = v === "coach" ? "Loading the coach view" : `Getting ${nick(CARD[v])}'s match plan ready`;
+  $("#loadSub").textContent = v === "coach" ? "All players, all scenarios" : (CARD[v].bench ? `Your slot: ${CARD[v].slot}. Zones, passes and scenarios` : "Your zones, passing options and scenarios");
+  L.classList.remove("fade"); L.hidden = false; bar.style.width = "0";
+  $("#meName").textContent = meLabel();
+  buildPitch(); renderCards(); enterView(view, true);
+  const wait = reduce ? 300 : 1650;
+  requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = "100%"; }));
+  setTimeout(() => { L.classList.add("fade"); setTimeout(() => { L.hidden = true; document.body.style.overflow = ""; }, reduce ? 0 : 350); }, wait);
+}
 $("#meBtn").onclick = openWelcome;
-document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#welcome").hidden && me) closeWelcome(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#welcome").hidden && me){ $("#welcome").hidden = true; document.body.style.overflow = ""; } });
+
+// ---------- shared pitch drawing ----------
+const COLX = [2,34,66,98], ROWY = [138,115.333,92.667,70,47.333,24.667,2];
+const cell = n => { const c = (n-1)%3, r = Math.floor((n-1)/3)+1; return [COLX[c], ROWY[r], 32, +(ROWY[r-1]-ROWY[r]).toFixed(3)]; };
+const zoneOf = (x, y) => { const c = x < 34 ? 0 : x < 66 ? 1 : 2; let r = 1; for (let k = 1; k <= 6; k++) if (y <= ROWY[k-1] && y >= ROWY[k]) { r = k; break; } return (r-1)*3 + c + 1; };
+const TAGCOL = {forward:"#F2B134", sideways:"#FFFFFF", back:"#FF9A8C", opp:"#E4574B", cut:"#F2B134", lost:"#E4574B", won:"#F2B134", goal:"#F2B134", saved:"#F2B134", wide:"#FFFFFF"};
+function baseSvg(withNums){
+  let s = `<rect x="-5" y="-10" width="110" height="162" fill="#1D6446"/>`;
+  for (let i = 0; i < 12; i += 2) s += `<rect x="2" y="${2+i*(136/12)}" width="96" height="${136/12}" fill="#FFFFFF" fill-opacity=".045"/>`;
+  s += `<g fill="none" stroke="#FFFFFF" stroke-opacity=".18" stroke-width=".35">`;
+  for (let n = 1; n <= 18; n++){ const [x,y,w,h] = cell(n); s += `<rect x="${x}" y="${y}" width="${w}" height="${h}"/>`; }
+  s += `</g>`;
+  if (withNums) for (let n = 1; n <= 18; n++){ const [x,y] = cell(n); s += `<text x="${x+2}" y="${y+4.4}" font-size="3.2" font-weight="700" fill="#FFFFFF" fill-opacity=".35" font-family="Barlow, sans-serif">${n}</text>`; }
+  s += `<g fill="none" stroke="#FFFFFF" stroke-opacity=".6" stroke-width=".55"><rect x="2" y="2" width="96" height="136"/><circle cx="50" cy="70" r="12"/><rect x="21.5" y="2" width="57" height="22.4"/><rect x="21.5" y="115.6" width="57" height="22.4"/><rect x="37" y="2" width="26" height="7.5"/><rect x="37" y="130.5" width="26" height="7.5"/><path d="M39.5 24.4 A12 12 0 0 0 60.5 24.4"/><path d="M39.5 115.6 A12 12 0 0 1 60.5 115.6"/></g>`;
+  s += `<g fill="#FFFFFF" fill-opacity=".16" stroke="#FFFFFF" stroke-width=".7"><rect x="44.8" y="-1.2" width="10.4" height="3.2"/><rect x="44.8" y="138" width="10.4" height="3.2"/></g>`;
+  s += `<line x1="2" y1="70" x2="98" y2="70" stroke="#F2B134" stroke-width=".9" stroke-dasharray="3 2"/>`;
+  return s;
+}
+const halo = `paint-order="stroke" stroke="#0B1F3A" stroke-width="1.1" stroke-linejoin="round"`;
+function ourDot(id, x, y, f, labelText){
+  const mine = id === f;
+  return (mine ? `<circle cx="${x}" cy="${y}" r="6" fill="${YOU}" fill-opacity=".28"/>` : "") +
+    `<circle cx="${x}" cy="${y}" r="${mine?3.2:2.8}" fill="${mine?YOU:"#0B1F3A"}" stroke="#FFFFFF" stroke-width=".8"/>` +
+    `<text x="${x}" y="${y+(mine?7.6:6.6)}" text-anchor="middle" font-size="${mine?4.2:3.3}" font-weight="700" fill="${mine?"#FFC9A8":"#FFFFFF"}" font-family="Barlow, sans-serif" ${halo}>${esc(labelText || id)}</text>`;
+}
+const oppDot = (id, x, y) => `<circle cx="${x}" cy="${y}" r="2.5" fill="#E4574B" stroke="#FFFFFF" stroke-width=".7"/><text x="${x}" y="${y+1.05}" text-anchor="middle" font-size="2.9" font-weight="700" fill="#FFFFFF" font-family="Barlow, sans-serif">${id.slice(1)}</text>`;
+const youLabel = id => (me && me !== "coach" && CARD[me].bench && id === focus()) ? `${nick(CARD[me])} (${id})` : id;
+
+// ---------- tactics view ----------
+const FT_BOARD = {Bryce:[41,14],Sameed:[59,20],Mehmet:[18,30],Sherif:[82,30],Yosof:[44,43],Farhad:[59,63],OG:[18,89],Noah:[82,89],Taran:[38,98],Yazan:[62,98],Dyvane:[50,119]};
+const SHAPE = {
+  "without-ball": {pos: () => C.DD, title: "Team shape without the ball",
+    rules: ["Everyone except Bryce and Sameed stays behind the half line.", "Move as one block toward the ball. Nobody chases.", "Win it when they make a mistake, then a safe first pass."]},
+  "with-ball": {pos: () => C.DA, title: "Team shape with the ball",
+    rules: ["Pass sideways or forward. No rushing, no hopeful balls.", "Nothing lost in our half: in doubt, use option 3.", "Once we're in their half, hold it there."]},
+  "final-third": {pos: () => FT_BOARD, title: "How we hold their half",
+    rules: ["Bryce on the left of zone 17, Sameed a step deeper as the false 9.", "Mehmet and Sherif at the top of 13 and 15; Yosof at the bottom of 14.", "Farhad, OG and Noah cover behind. No clean pass? Recycle."]}
+};
+function shapeSvg(v){
+  const f = focus(), pos = SHAPE[v].pos(), vb = TABS.find(t => t.id === v).view.join(" ");
+  const occ = {};
+  for (const id in pos) occ[zoneOf(pos[id][0], pos[id][1])] = (occ[zoneOf(pos[id][0], pos[id][1])] || false) || id === f;
+  let s = `<svg viewBox="${vb}" role="img" aria-label="${esc(SHAPE[v].title)}">` + baseSvg(true);
+  for (const z in occ){ const [x,y,w,h] = cell(+z); s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${occ[z]?YOU:"#FFFFFF"}" fill-opacity="${occ[z]?.35:.14}" stroke="${occ[z]?YOU:"#FFFFFF"}" stroke-opacity=".8" stroke-width=".8"/>`; }
+  OURS.filter(id => id !== f).concat(f ? [f] : []).forEach(id => { s += ourDot(id, pos[id][0], pos[id][1], f, youLabel(id)); });
+  return s + "</svg>";
+}
+function stepWho(st){
+  if (st.kind === "pass") return `${label(st.from)} to ${label(st.to)}`;
+  if (st.kind === "tackle") return `${label(st.to)} wins it from ${label(st.from)}`;
+  if (st.kind === "shot") return `${label(st.from)} shoots`;
+  if (st.kind === "carry") return `${label(st.from)} carries`;
+  return "Shape";
+}
+const TAGWORD = {forward:"forward", sideways:"sideways", back:"back", cut:"cut out", won:"won", goal:"goal", saved:"saved", wide:"wide", lost:"lost", opp:"their pass", carry:"carry"};
+function scenarioSvg(sc, comp, k){
+  const f = focus(), fin = comp.final, vb = TABS[tabIx].view.join(" ");
+  let s = `<svg viewBox="${vb}" role="img" aria-label="${esc(sc.name)}: passes numbered in order, players shown where they finish"><defs>`;
+  [["a","#F2B134"],["w","#FFFFFF"],["r","#E4574B"]].forEach(([n,c]) => s += `<marker id="m${n}${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="${c}"/></marker>`);
+  s += `</defs>` + baseSvg(false);
+  for (let i = 1; i <= 11; i++) s += oppDot("o"+i, fin["o"+i][0], fin["o"+i][1]);
+  OURS.filter(id => id !== f).forEach(id => s += ourDot(id, fin[id][0], fin[id][1], f));
+  if (f) s += ourDot(f, fin[f][0], fin[f][1], f, youLabel(f));
+  let n = 0;
+  comp.steps.forEach(st => {
+    if (!(st.kind === "pass" || st.kind === "tackle" || st.kind === "shot")) return;
+    n++;
+    const col = TAGCOL[st.tag] || "#FFFFFF", mk = col === "#E4574B" ? "r" : col === "#FFFFFF" ? "w" : "a";
+    const mine = f && (st.from === f || st.to === f);
+    s += `<line x1="${st.bs[0]}" y1="${st.bs[1]}" x2="${st.be[0]}" y2="${st.be[1]}" stroke="${col}" stroke-width="${mine?1.5:(st.kind==="shot"?1.4:1)}" ${st.tag==="sideways"?'stroke-dasharray="2.2 1.6"':""} stroke-linecap="round" marker-end="url(#m${mk}${k})" opacity=".95"/>`;
+    const mx = st.bs[0] + (st.be[0]-st.bs[0])*.5, my = st.bs[1] + (st.be[1]-st.bs[1])*.5;
+    s += `<circle cx="${mx}" cy="${my}" r="2.5" fill="${mine?YOU:"#0B1F3A"}" stroke="${col}" stroke-width=".6"/><text x="${mx}" y="${my+1.05}" text-anchor="middle" font-size="2.9" font-weight="800" fill="#FFFFFF" font-family="Barlow, sans-serif">${n}</text>`;
+  });
+  return s + "</svg>";
+}
+function renderTactics(){
+  const g = $("#tgrid"), v = view, f = focus();
+  let h = `<article class="tc shape"><div class="hd"><span class="kicker">Team shape</span><h2>${esc(SHAPE[v].title)}</h2></div><div class="pv">${shapeSvg(v)}</div><div class="bd"><h3>Rules</h3><ol class="seq">${SHAPE[v].rules.map((r, i) => `<li><span class="badge">${i+1}</span><span>${esc(r)}</span></li>`).join("")}</ol></div></article>`;
+  TABS[tabIx].scenarios.forEach((sc, k) => {
+    const comp = compile(sc);
+    let n = 0;
+    const involved = f && comp.steps.some(st => involves(st, f));
+    const items = comp.steps.map(st => {
+      const isBall = st.kind === "pass" || st.kind === "tackle" || st.kind === "shot";
+      if (isBall) n++;
+      const cls = st.tag === "opp" || st.tag === "lost" ? "r" : (st.tag === "sideways" || st.tag === "back" || !isBall) ? "s" : "f";
+      const mine = f && (st.from === f || st.to === f);
+      return `<li${mine ? ' class="me"' : ""}><span class="badge ${cls}">${isBall ? n : "·"}</span><span><b>${esc(stepWho(st))}</b>${TAGWORD[st.tag] ? " · " + TAGWORD[st.tag] : ""}</span></li>`;
+    }).join("");
+    h += `<article class="tc"><div class="hd"><span class="kicker">Scenario ${k+1}</span><h2>${esc(sc.name)}</h2>${involved ? '<span class="youpill">YOU ARE IN THIS</span>' : ""}</div>
+      <div class="pv">${scenarioSvg(sc, comp, v + k)}</div>
+      <div class="bd"><h3>Trigger</h3><p>${esc(sc.trigger)}</p><h3>Sequence</h3><ol class="seq">${items}</ol><h3>Coaching point</h3><p>${esc(sc.coach)}</p><p class="outcome k-${sc.result.kind}">${esc(sc.result.text)}</p></div></article>`;
+  });
+  g.innerHTML = h;
+}
 
 // ---------- simulation pitch ----------
 const svg = $("#pitch");
 function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
-const COLX = [2,34,66,98], ROWY = [138,115.333,92.667,70,47.333,24.667,2];
-const cell = n => { const c = (n-1)%3, r = Math.floor((n-1)/3)+1; return [COLX[c], ROWY[r], 32, +(ROWY[r-1]-ROWY[r]).toFixed(3)]; };
-const TAGCOL = {forward:"#F2B134", sideways:"#FFFFFF", back:"#FF9A8C", opp:"#E4574B", cut:"#F2B134", lost:"#E4574B", won:"#F2B134", goal:"#F2B134", saved:"#F2B134", wide:"#FFFFFF"};
 let P = {};
 function buildPitch(){
-  svg.innerHTML = "";
-  el("rect", {x:-5,y:-10,width:110,height:162,fill:"#1D6446"}, svg);
-  for (let i = 0; i < 12; i += 2) el("rect", {x:2,y:2+i*(136/12),width:96,height:136/12,fill:"#FFFFFF","fill-opacity":".045"}, svg);
-  const z = el("g", {}, svg);
-  for (let n = 1; n <= 18; n++){
-    const [x,y,w,h] = cell(n);
-    el("rect", {x,y,width:w,height:h,fill:"none",stroke:"#FFFFFF","stroke-opacity":".18","stroke-width":".35"}, z);
-    el("text", {x:x+2,y:y+4.4,"font-size":3.2,"font-weight":700,fill:"#FFFFFF","fill-opacity":".35","font-family":"Barlow, sans-serif"}, z).textContent = n;
-  }
-  const m = el("g", {fill:"none",stroke:"#FFFFFF","stroke-opacity":".6","stroke-width":".55"}, svg);
-  el("rect", {x:2,y:2,width:96,height:136}, m);
-  el("circle", {cx:50,cy:70,r:12}, m);
-  el("rect", {x:21.5,y:2,width:57,height:22.4}, m); el("rect", {x:21.5,y:115.6,width:57,height:22.4}, m);
-  el("rect", {x:37,y:2,width:26,height:7.5}, m); el("rect", {x:37,y:130.5,width:26,height:7.5}, m);
-  el("path", {d:"M39.5 24.4 A12 12 0 0 0 60.5 24.4"}, m); el("path", {d:"M39.5 115.6 A12 12 0 0 1 60.5 115.6"}, m);
-  const g = el("g", {fill:"#FFFFFF","fill-opacity":".16",stroke:"#FFFFFF","stroke-width":".7"}, svg);
-  el("rect", {x:44.8,y:-1.2,width:10.4,height:3.2}, g); el("rect", {x:44.8,y:138,width:10.4,height:3.2}, g);
-  el("line", {x1:2,y1:70,x2:98,y2:70,stroke:"#F2B134","stroke-width":".9","stroke-dasharray":"3 2"}, svg);
+  svg.innerHTML = baseSvg(true);
   P.team = {};
   ["back","mid","fwd"].forEach(k => P.team[k] = el("polyline", {fill:"none",stroke:"#FFFFFF","stroke-opacity":".4","stroke-width":".6","stroke-dasharray":"1.6 1.4"}, svg));
   P.lines = [0,1,2].map(() => el("line", {"stroke-linecap":"round","stroke-width":1,opacity:0}, svg));
@@ -114,15 +178,15 @@ function buildPitch(){
   OURS.filter(id => id !== f).concat(f ? [f] : []).forEach(id => {
     const gg = el("g", {}, svg), mine = id === f;
     if (mine){
-      const halo = el("circle", {r:5.5,fill:"#F2B134","fill-opacity":".25",stroke:"#F2B134","stroke-width":".6"}, gg);
+      const hc = el("circle", {r:5.5,fill:YOU,"fill-opacity":".28",stroke:YOU,"stroke-width":".6"}, gg);
       if (!reduce){
-        el("animate", {attributeName:"r",values:"4.6;7;4.6",dur:"1.8s",repeatCount:"indefinite"}, halo);
-        el("animate", {attributeName:"fill-opacity",values:".35;.08;.35",dur:"1.8s",repeatCount:"indefinite"}, halo);
+        el("animate", {attributeName:"r",values:"4.6;7;4.6",dur:"1.8s",repeatCount:"indefinite"}, hc);
+        el("animate", {attributeName:"fill-opacity",values:".4;.08;.4",dur:"1.8s",repeatCount:"indefinite"}, hc);
       }
     }
-    el("circle", {r:mine?3.2:2.8,fill:mine?"#F2B134":"#0B1F3A",stroke:"#FFFFFF","stroke-width":".8"}, gg);
-    const t = el("text", {y:mine?7.6:6.6,"text-anchor":"middle","font-size":mine?4.2:3.3,"font-weight":700,fill:mine?"#F2B134":"#FFFFFF","font-family":"Barlow, sans-serif","paint-order":"stroke",stroke:"#0B1F3A","stroke-width":1.1,"stroke-linejoin":"round"}, gg);
-    t.textContent = mine && me !== f ? CARD[me].id + " (" + f + ")" : id;
+    el("circle", {r:mine?3.2:2.8,fill:mine?YOU:"#0B1F3A",stroke:"#FFFFFF","stroke-width":".8"}, gg);
+    const t = el("text", {y:mine?7.6:6.6,"text-anchor":"middle","font-size":mine?4.2:3.3,"font-weight":700,fill:mine?"#FFC9A8":"#FFFFFF","font-family":"Barlow, sans-serif","paint-order":"stroke",stroke:"#0B1F3A","stroke-width":1.1,"stroke-linejoin":"round"}, gg);
+    t.textContent = youLabel(id);
     P.pl[id] = gg;
   });
   P.ring = el("circle", {r:4.4,fill:"none",stroke:"#FFFFFF","stroke-width":".9",opacity:0}, svg);
@@ -130,7 +194,7 @@ function buildPitch(){
   P.ball = el("circle", {r:1.35,fill:"#FFFFFF",stroke:"#0B1F3A","stroke-width":".45"}, svg);
 }
 
-// ---------- simulation loop ----------
+// ---------- views ----------
 const VIEWS = ["without-ball","with-ball","final-third","cards"];
 const EYEBROW = {"without-ball":"Without the ball","with-ball":"With the ball","final-third":"Final third"};
 let view = "without-ball", tabIx = 0, scIx = {}, comp = null, T = 0, lastTs = 0;
@@ -139,7 +203,7 @@ const tabData = () => TABS[tabIx];
 const scn = () => tabData().scenarios[scIx[view] || 0];
 const involves = (st, id) => !!id && (st.from === id || st.to === id || new RegExp("\\b" + id + "\\b").test(st.text));
 
-function enterView(v, force){
+function enterView(v){
   if (!VIEWS.includes(v)) v = "without-ball";
   const changed = v !== view; view = v;
   $$(".tab").forEach(b => { const on = b.dataset.view === v; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; });
@@ -155,22 +219,31 @@ function enterView(v, force){
   $("#goalWord").textContent = t.goal.replace(/\.$/, "");
   $("#goalText").textContent = t.goalText;
   renderJob();
-  buildChips();
-  startScenario(scIx[v] || 0);
+  applyMode();
 }
+function applyMode(){
+  $("#modeTactics").setAttribute("aria-pressed", mode === "tactics");
+  $("#modeSim").setAttribute("aria-pressed", mode === "sim");
+  $("#tgrid").hidden = mode !== "tactics";
+  $("#simgrid").hidden = mode !== "sim";
+  if (view === "cards") return;
+  if (mode === "tactics") renderTactics();
+  else { buildChips(); startScenario(scIx[view] || 0); }
+}
+$("#modeTactics").onclick = () => { mode = "tactics"; store.set("wf-mode", mode); applyMode(); };
+$("#modeSim").onclick = () => { mode = "sim"; store.set("wf-mode", mode); applyMode(); };
 
 function renderJob(){
   const job = $("#job");
   if (!me || me === "coach"){ job.hidden = true; return; }
   job.hidden = false;
   const c = CARD[me];
-  $("#jobTitle").textContent = "Your job · " + (c.id === "OG" ? "OG" : firstName(c));
+  $("#jobTitle").textContent = "Your job · " + nick(c);
   $("#jobText").textContent = view === "without-ball" ? c.d : c.a;
   const s = $("#jobSlot");
-  if (c.bench){ s.hidden = false; s.textContent = `On the bench you cover ${c.slot}. Watch the amber dot: that is your slot when you come on.`; }
+  if (c.bench){ s.hidden = false; s.textContent = `On the bench you cover ${c.slot}. The orange dot is your slot when you come on.`; }
   else s.hidden = true;
 }
-
 function buildChips(){
   const box = $("#chips"); box.innerHTML = "";
   const f = focus();
@@ -184,18 +257,16 @@ function buildChips(){
     box.appendChild(b);
   });
 }
-
 function startScenario(k){
   scIx[view] = k;
   const s = scn();
   comp = compile(s);
-  T = reduce ? comp.total : 0; lastTs = 0;
-  $$("#chips .chip").forEach((b, j) => { b.setAttribute("aria-selected", j === k); if (j === k && b.scrollIntoView) { const box = $("#chips"); box.scrollTo({left: b.offsetLeft - box.offsetLeft - 8, behavior: reduce ? "auto" : "smooth"}); } });
+  T = reduce ? comp.total : 0; lastTs = 0; lastCap = "";
+  $$("#chips .chip").forEach((b, j) => { b.setAttribute("aria-selected", j === k); if (j === k){ const box = $("#chips"); box.scrollTo({left: b.offsetLeft - box.offsetLeft - 8, behavior: reduce ? "auto" : "smooth"}); } });
   $("#trigger").textContent = s.trigger;
   $("#coach").textContent = s.coach;
   render();
 }
-
 const poly = (ids, pos) => ids.map(id => pos[id]).sort((a,b) => a[0]-b[0]).map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
 let lastCap = "";
 function render(){
@@ -218,8 +289,7 @@ function render(){
   P.team.back.setAttribute("points", poly(["OG","Taran","Yazan","Noah"], S.pos));
   P.team.mid.setAttribute("points", poly(["Mehmet","Yosof","Farhad","Sherif"], S.pos));
   P.team.fwd.setAttribute("points", poly(["Bryce","Sameed"], S.pos));
-  const st = comp.steps[S.idx];
-  const cap = S.idx + "|" + scIx[view];
+  const st = comp.steps[S.idx], cap = S.idx + "|" + scIx[view];
   if (cap !== lastCap){
     lastCap = cap;
     $("#capScn").textContent = scn().name;
@@ -227,41 +297,36 @@ function render(){
     $("#capText").textContent = st.text;
     $("#capYou").hidden = !involves(st, f);
   }
-  const done = T >= comp.total - 900;
   const r = $("#result");
-  if (done){ r.hidden = false; r.className = "result k-" + scn().result.kind; r.textContent = scn().result.text; }
+  if (T >= comp.total - 900){ r.hidden = false; r.className = "result k-" + scn().result.kind; r.textContent = scn().result.text; }
   else r.hidden = true;
-  const bar = $$("#chips .chip")[scIx[view]];
-  if (bar) bar.querySelector(".bar").style.width = Math.min(100, T / (comp.total + HOLD) * 100) + "%";
+  const chip = $$("#chips .chip")[scIx[view]];
+  if (chip) chip.querySelector(".bar").style.width = Math.min(100, T / (comp.total + HOLD) * 100) + "%";
 }
-
 function frame(ts){
-  if (view !== "cards" && comp && !document.hidden && !reduce){
+  if (view !== "cards" && mode === "sim" && comp && !document.hidden && !reduce){
     if (!lastTs) lastTs = ts;
     T += Math.min(80, ts - lastTs);
     lastTs = ts;
-    if (T >= comp.total + HOLD){ startScenario(((scIx[view] || 0) + 1) % tabData().scenarios.length); }
+    if (T >= comp.total + HOLD) startScenario(((scIx[view] || 0) + 1) % tabData().scenarios.length);
     else render();
   } else lastTs = 0;
   requestAnimationFrame(frame);
 }
-
 $$(".tab").forEach(b => b.onclick = () => enterView(b.dataset.view));
 $(".tabs").addEventListener("keydown", e => {
-  const i = VIEWS.indexOf(view);
-  if (e.key === "ArrowRight" || e.key === "ArrowLeft"){
-    const n = VIEWS[(i + (e.key === "ArrowRight" ? 1 : 3)) % 4]; enterView(n); $(`.tab[data-view="${n}"]`).focus();
-  }
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const n = VIEWS[(VIEWS.indexOf(view) + (e.key === "ArrowRight" ? 1 : 3)) % 4]; enterView(n); $(`.tab[data-view="${n}"]`).focus();
 });
 window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (VIEWS.includes(h) && h !== view) enterView(h); });
 
 // ---------- battle cards ----------
-function cardSvg(c, mode, big){
-  const Z = mode === "d" ? C.ZD : C.ZA, D = mode === "d" ? C.DD : C.DA, me_ = c.slot;
+function cardSvg(c, m, big){
+  const Z = m === "d" ? C.ZD : C.ZA, D = m === "d" ? C.DD : C.DA, me_ = c.slot;
   const [x,y,w,h] = cell(Z[me_]);
   const opt = new Set(); c.p.forEach(o => o.to.forEach(k => opt.add(k)));
   let s = `<svg viewBox="0 0 100 140" aria-hidden="true"><rect width="100" height="140" fill="#1D6446"/>`;
-  s += `<rect x="2" y="2" width="96" height="68" fill="${mode === "d" ? "#000" : "#FFF"}" fill-opacity="${mode === "d" ? .25 : .08}"/>`;
+  s += `<rect x="2" y="2" width="96" height="68" fill="${m === "d" ? "#000" : "#FFF"}" fill-opacity="${m === "d" ? .25 : .08}"/>`;
   s += `<g fill="none" stroke="#FFF" stroke-opacity=".2" stroke-width=".4">`;
   for (let n = 1; n <= 18; n++){ const q = cell(n); s += `<rect x="${q[0]}" y="${q[1]}" width="${q[2]}" height="${q[3]}"/>`; }
   s += `</g><g fill="none" stroke="#FFF" stroke-opacity=".55" stroke-width=".7"><rect x="2" y="2" width="96" height="136"/><rect x="21.5" y="2" width="57" height="22.4"/><rect x="21.5" y="115.6" width="57" height="22.4"/></g>`;
@@ -275,14 +340,11 @@ function cardSvg(c, mode, big){
   c.p.forEach(o => o.to.forEach(k => { const [cx, cy] = D[k]; s += `<circle cx="${cx}" cy="${cy}" r="5" fill="${o.n === 1 ? "#F2B134" : "#FFF"}" stroke="#0B1F3A" stroke-width=".8"/><text x="${cx}" y="${cy + 2}" text-anchor="middle" font-size="5.6" font-weight="800" fill="#0B1F3A" font-family="Barlow, sans-serif">${o.n}</text>`; }));
   return s + "</svg>";
 }
-function orderCards(){
-  const all = C.CARDS.slice();
-  if (me && me !== "coach"){ const i = all.findIndex(c => c.id === me); all.unshift(all.splice(i, 1)[0]); }
-  return all;
-}
 function renderCards(){
   const g = $("#grid"); g.innerHTML = "";
-  orderCards().forEach(c => {
+  const all = C.CARDS.slice();
+  if (me && me !== "coach"){ const i = all.findIndex(c => c.id === me); all.unshift(all.splice(i, 1)[0]); }
+  all.forEach(c => {
     const mine = c.id === me;
     const b = document.createElement("button");
     b.type = "button"; b.className = "bc" + (mine ? " mine" : "");
@@ -311,8 +373,8 @@ function openCard(c){
 dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
 
 // ---------- start ----------
-buildWelcome();
-if (me) $("#meName").textContent = me === "coach" ? "Coach view" : (me === "OG" ? "OG" : firstName(CARD[me])) + " · " + (CARD[me].bench ? "Bench" : shortRole(CARD[me]));
+buildSelect();
+if (me) $("#meName").textContent = meLabel();
 buildPitch();
 renderCards();
 const h0 = location.hash.slice(1);
