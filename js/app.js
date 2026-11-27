@@ -515,16 +515,17 @@ function buildSteps(){
   const sc = bestScenario(slot);
   const opts = c.p.map(o => `<li><span class="num ${o.n === 1 ? "n1" : ""}">${o.n}</span><span><b>${esc(o.label)}</b> ${esc(o.hint)}</span></li>`).join("");
   gQuiz = buildQuiz(c, w);
-  const s1 = f ? `<p><b>${esc(f.dayLong)} vs ${esc(f.opp)}</b>, kick-off ${esc(f.time)} at ${esc(w.match.field)}.</p>` : `<p>No match is scheduled this week. Use the time to refresh your role.</p>`;
+  const chips = `<div class="g-chips">${c.p.map(o => `<span class="${o.n === 1 ? "c1" : ""}"><i>${o.n}</i>${esc(o.label)}</span>`).join("")}</div>`;
+  const s1 = f ? `<p><b>${esc(f.dayLong)} vs ${esc(f.opp)}</b></p><p class="g-meta">${esc(f.time)} · ${esc(w.match.field)}</p>` : `<p>No match is scheduled this week. Use the time to refresh your role.</p>`;
   return [
     {title: f ? "This week's match" : "This week", view:"week", target:"#matchCard",
-     body: s1 + (REPORTS_ENC[me] ? `<p class="g-rep">Your report card is ready. Open it from the button at the bottom right, with your access code.</p>` : "")},
+     main: s1 + (REPORTS_ENC[me] ? `<p class="g-rep">Your report card is ready: tap the button at the bottom right.</p>` : ""), more:""},
     {title:"Your job without the ball", view:"tactics", phase:"without-ball", target:"#tgrid .pv", dot:true,
-     body:`<p>${esc(pre + c.d)}</p><p class="g-small">Your red dot shows where you stand.</p>`},
+     main:`<p class="g-clamp">${esc(pre + c.d)}</p>`, more:`<p class="g-small">Your red dot shows where you stand.</p>`},
     {title:"Your job with the ball", view:"tactics", phase:"with-ball", target:"#tgrid .pv", dot:true,
-     body:`<p>${esc(pre + c.a)}</p><ol class="g-opts">${opts}</ol><p class="g-small"><b>Target:</b> ${esc(c.t)}</p>`},
-    {title:"Watch this: " + sc.sc.name, view:"simulations", phase:sc.phase, scen:sc.k, target:".pitchcard", sim:true,
-     body:`<p>${esc(sc.sc.trigger)}</p><p class="g-small">You're the red dot. Watch for the YOU tag under the pitch; the move loops.</p>`},
+     main:`<p class="g-clamp">${esc(pre + c.a)}</p>` + chips, more:`<ol class="g-opts">${opts}</ol><p class="g-small"><b>Target:</b> ${esc(c.t)}</p>`},
+    {title:"Watch: " + sc.sc.name, view:"simulations", phase:sc.phase, scen:sc.k, target:".pitchcard", sim:true,
+     main:`<p>You're the red dot. Watch your moments; the move loops.</p>`, more:`<p>${esc(sc.sc.trigger)}</p>`},
     {title:"Quick check", view:"week", quiz:true, body:""}
   ];
 }
@@ -556,7 +557,14 @@ function goStep(i){
   $("#gBack").disabled = gIx === 0;
   const next = $("#gNext");
   if (st.quiz){ renderQuiz(); }
-  else { $("#gBody").innerHTML = st.body; next.disabled = false; next.textContent = "Next"; next.dataset.mode = "next"; }
+  else {
+    $("#gBody").innerHTML = `<div class="g-main">${st.main}</div>` + (st.more ? `<div class="g-more">${st.more}</div>` : "");
+    next.disabled = false; next.textContent = "Next"; next.dataset.mode = "next";
+  }
+  gTip.classList.remove("open");
+  const mb = $("#gMore"), clamp = $("#gBody .g-clamp");
+  const needMore = !st.quiz && (!!st.more || (clamp && clamp.scrollHeight > clamp.clientHeight + 2));
+  mb.hidden = !needMore; mb.textContent = "More"; mb.setAttribute("aria-expanded", "false");
   gTarget = st.target ? $(st.target) : null;
   gDot = st.dot || st.sim ? focus() : null;
   gTip.classList.toggle("center", !gTarget);
@@ -623,6 +631,7 @@ function placeGuide(){
 $("#gBack").onclick = () => goStep(gIx - 1);
 $("#gNext").onclick = () => { const m = $("#gNext").dataset.mode; if (m === "restart") goStep(0); else if (m === "next") goStep(gIx + 1); };
 $("#gX").onclick = closeGuide;
+$("#gMore").onclick = () => { const o = gTip.classList.toggle("open"); $("#gMore").textContent = o ? "Less" : "More"; $("#gMore").setAttribute("aria-expanded", o); };
 document.addEventListener("keydown", e => {
   if (guide.hidden) return;
   if (e.key === "Escape") closeGuide();
