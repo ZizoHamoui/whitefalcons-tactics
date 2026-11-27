@@ -16,13 +16,12 @@ const store = {
 };
 const shortRole = c => c.role.split("·")[0].trim();
 const nick = c => c.id === "OG" ? "OG" : c.name.split(" ")[0];
-const YOU = "#FF7A45";
+const YOU = "#D7263D", US = "#3B5BA9", THEM = "#C3CAD8", INK = "#0E1626";
 
 // ---------- who am I ----------
 let me = store.get("wf-player");
 if (me && me !== "coach" && !CARD[me]) me = null;
 const focus = () => (me && me !== "coach") ? CARD[me].slot : null;
-let mode = store.get("wf-mode") === "sim" ? "sim" : "tactics";
 
 function meLabel(){
   if (me === "coach") return "Coach view";
@@ -67,7 +66,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#welco
 const COLX = [2,34,66,98], ROWY = [138,115.333,92.667,70,47.333,24.667,2];
 const cell = n => { const c = (n-1)%3, r = Math.floor((n-1)/3)+1; return [COLX[c], ROWY[r], 32, +(ROWY[r-1]-ROWY[r]).toFixed(3)]; };
 const zoneOf = (x, y) => { const c = x < 34 ? 0 : x < 66 ? 1 : 2; let r = 1; for (let k = 1; k <= 6; k++) if (y <= ROWY[k-1] && y >= ROWY[k]) { r = k; break; } return (r-1)*3 + c + 1; };
-const TAGCOL = {forward:"#F2B134", sideways:"#FFFFFF", back:"#FF9A8C", opp:"#E4574B", cut:"#F2B134", lost:"#E4574B", won:"#F2B134", goal:"#F2B134", saved:"#F2B134", wide:"#FFFFFF"};
+const TAGCOL = {forward:"#8FB8FF", sideways:"#FFFFFF", back:"#FFB3BC", opp:"#C3CAD8", cut:"#8FB8FF", lost:"#FF5A6E", won:"#8FB8FF", goal:"#FF5A6E", saved:"#8FB8FF", wide:"#FFFFFF"};
 function baseSvg(withNums){
   let s = `<rect x="-5" y="-10" width="110" height="162" fill="#1D6446"/>`;
   for (let i = 0; i < 12; i += 2) s += `<rect x="2" y="${2+i*(136/12)}" width="96" height="${136/12}" fill="#FFFFFF" fill-opacity=".045"/>`;
@@ -77,17 +76,17 @@ function baseSvg(withNums){
   if (withNums) for (let n = 1; n <= 18; n++){ const [x,y] = cell(n); s += `<text x="${x+2}" y="${y+4.4}" font-size="3.2" font-weight="700" fill="#FFFFFF" fill-opacity=".35" font-family="Barlow, sans-serif">${n}</text>`; }
   s += `<g fill="none" stroke="#FFFFFF" stroke-opacity=".6" stroke-width=".55"><rect x="2" y="2" width="96" height="136"/><circle cx="50" cy="70" r="12"/><rect x="21.5" y="2" width="57" height="22.4"/><rect x="21.5" y="115.6" width="57" height="22.4"/><rect x="37" y="2" width="26" height="7.5"/><rect x="37" y="130.5" width="26" height="7.5"/><path d="M39.5 24.4 A12 12 0 0 0 60.5 24.4"/><path d="M39.5 115.6 A12 12 0 0 1 60.5 115.6"/></g>`;
   s += `<g fill="#FFFFFF" fill-opacity=".16" stroke="#FFFFFF" stroke-width=".7"><rect x="44.8" y="-1.2" width="10.4" height="3.2"/><rect x="44.8" y="138" width="10.4" height="3.2"/></g>`;
-  s += `<line x1="2" y1="70" x2="98" y2="70" stroke="#F2B134" stroke-width=".9" stroke-dasharray="3 2"/>`;
+  s += `<line x1="2" y1="70" x2="98" y2="70" stroke="#B9CCF7" stroke-width=".9" stroke-dasharray="3 2"/>`;
   return s;
 }
-const halo = `paint-order="stroke" stroke="#0B1F3A" stroke-width="1.1" stroke-linejoin="round"`;
+const halo = `paint-order="stroke" stroke="#0E1626" stroke-width="1.1" stroke-linejoin="round"`;
 function ourDot(id, x, y, f, labelText){
   const mine = id === f;
   return (mine ? `<circle cx="${x}" cy="${y}" r="6" fill="${YOU}" fill-opacity=".28"/>` : "") +
-    `<circle cx="${x}" cy="${y}" r="${mine?3.2:2.8}" fill="${mine?YOU:"#0B1F3A"}" stroke="#FFFFFF" stroke-width=".8"/>` +
-    `<text x="${x}" y="${y+(mine?7.6:6.6)}" text-anchor="middle" font-size="${mine?4.2:3.3}" font-weight="700" fill="${mine?"#FFC9A8":"#FFFFFF"}" font-family="Barlow, sans-serif" ${halo}>${esc(labelText || id)}</text>`;
+    `<circle cx="${x}" cy="${y}" r="${mine?3.2:2.8}" fill="${mine?YOU:US}" stroke="#FFFFFF" stroke-width=".8"/>` +
+    `<text x="${x}" y="${y+(mine?7.6:6.6)}" text-anchor="middle" font-size="${mine?4.2:3.3}" font-weight="700" fill="${mine?"#FFD3D9":"#FFFFFF"}" font-family="Barlow, sans-serif" ${halo}>${esc(labelText || id)}</text>`;
 }
-const oppDot = (id, x, y) => `<circle cx="${x}" cy="${y}" r="2.5" fill="#E4574B" stroke="#FFFFFF" stroke-width=".7"/><text x="${x}" y="${y+1.05}" text-anchor="middle" font-size="2.9" font-weight="700" fill="#FFFFFF" font-family="Barlow, sans-serif">${id.slice(1)}</text>`;
+const oppDot = (id, x, y) => `<circle cx="${x}" cy="${y}" r="2.5" fill="${THEM}" stroke="${INK}" stroke-width=".5"/><text x="${x}" y="${y+1.05}" text-anchor="middle" font-size="2.9" font-weight="700" fill="${INK}" font-family="Barlow, sans-serif">${id.slice(1)}</text>`;
 const youLabel = id => (me && me !== "coach" && CARD[me].bench && id === focus()) ? `${nick(CARD[me])} (${id})` : id;
 
 // ---------- tactics view ----------
@@ -111,7 +110,7 @@ function shapeSvg(v){
   return s + "</svg>";
 }
 function renderTactics(){
-  const g = $("#tgrid"), v = view;
+  const g = $("#tgrid"), v = phase;
   let h = `<article class="tc shape"><div class="hd"><span class="kicker">Team shape</span><h2>${esc(SHAPE[v].title)}</h2></div><div class="pv">${shapeSvg(v)}</div><div class="bd"><h3>Rules</h3><ol class="seq">${SHAPE[v].rules.map((r, i) => `<li><span class="badge">${i+1}</span><span>${esc(r)}</span></li>`).join("")}</ol></div></article>`;
   g.innerHTML = h;
 }
@@ -128,8 +127,8 @@ function buildPitch(){
   P.pl = {};
   for (let i = 1; i <= 11; i++){
     const gg = el("g", {}, svg);
-    el("circle", {r:2.5,fill:"#E4574B",stroke:"#FFFFFF","stroke-width":".7"}, gg);
-    el("text", {y:1.05,"text-anchor":"middle","font-size":2.9,"font-weight":700,fill:"#FFFFFF","font-family":"Barlow, sans-serif"}, gg).textContent = i;
+    el("circle", {r:2.5,fill:THEM,stroke:INK,"stroke-width":".5"}, gg);
+    el("text", {y:1.05,"text-anchor":"middle","font-size":2.9,"font-weight":700,fill:INK,"font-family":"Barlow, sans-serif"}, gg).textContent = i;
     P.pl["o"+i] = gg;
   }
   const f = focus();
@@ -142,54 +141,54 @@ function buildPitch(){
         el("animate", {attributeName:"fill-opacity",values:".4;.08;.4",dur:"1.8s",repeatCount:"indefinite"}, hc);
       }
     }
-    el("circle", {r:mine?3.2:2.8,fill:mine?YOU:"#0B1F3A",stroke:"#FFFFFF","stroke-width":".8"}, gg);
-    const t = el("text", {y:mine?7.6:6.6,"text-anchor":"middle","font-size":mine?4.2:3.3,"font-weight":700,fill:mine?"#FFC9A8":"#FFFFFF","font-family":"Barlow, sans-serif","paint-order":"stroke",stroke:"#0B1F3A","stroke-width":1.1,"stroke-linejoin":"round"}, gg);
+    el("circle", {r:mine?3.2:2.8,fill:mine?YOU:US,stroke:"#FFFFFF","stroke-width":".8"}, gg);
+    const t = el("text", {y:mine?7.6:6.6,"text-anchor":"middle","font-size":mine?4.2:3.3,"font-weight":700,fill:mine?"#FFD3D9":"#FFFFFF","font-family":"Barlow, sans-serif","paint-order":"stroke",stroke:INK,"stroke-width":1.1,"stroke-linejoin":"round"}, gg);
     t.textContent = youLabel(id);
     P.pl[id] = gg;
   });
   P.ring = el("circle", {r:4.4,fill:"none",stroke:"#FFFFFF","stroke-width":".9",opacity:0}, svg);
   P.shadow = el("circle", {r:1.5,fill:"#000000","fill-opacity":".3"}, svg);
-  P.ball = el("circle", {r:1.35,fill:"#FFFFFF",stroke:"#0B1F3A","stroke-width":".45"}, svg);
+  P.ball = el("circle", {r:1.35,fill:"#FFFFFF",stroke:INK,"stroke-width":".45"}, svg);
 }
 
 // ---------- views ----------
-const VIEWS = ["without-ball","with-ball","final-third","cards"];
+const VIEWS = ["tactics","simulations","instructions"];
+const PHASES = ["with-ball","without-ball","final-third"];
 const EYEBROW = {"without-ball":"Without the ball","with-ball":"With the ball","final-third":"Final third"};
-let view = "without-ball", tabIx = 0, scIx = {}, comp = null, T = 0, lastTs = 0;
+let view = "tactics", phase = PHASES.includes(store.get("wf-phase")) ? store.get("wf-phase") : "with-ball";
+let tabIx = 0, scIx = {}, comp = null, T = 0, lastTs = 0;
 const HOLD = 1600;
 const tabData = () => TABS[tabIx];
-const scn = () => tabData().scenarios[scIx[view] || 0];
+const scn = () => tabData().scenarios[scIx[phase] || 0];
 const involves = (st, id) => !!id && (st.from === id || st.to === id || new RegExp("\\b" + id + "\\b").test(st.text));
 
 function enterView(v){
-  if (!VIEWS.includes(v)) v = "without-ball";
+  if (!VIEWS.includes(v)) v = "tactics";
   const changed = v !== view; view = v;
   $$(".tab").forEach(b => { const on = b.dataset.view === v; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; });
   try { if (location.hash.slice(1) !== v) history.replaceState(null, "", "#" + v); } catch(e){}
-  const isCards = v === "cards";
+  const isCards = v === "instructions";
   $("#viewSim").hidden = isCards; $("#viewCards").hidden = !isCards;
   if (changed) window.scrollTo(0, 0);
-  if (isCards) return;
-  tabIx = TABS.findIndex(t => t.id === v);
+  if (!isCards) setPhase(phase);
+}
+function setPhase(p){
+  phase = p; store.set("wf-phase", p);
+  tabIx = TABS.findIndex(t => t.id === p);
+  $$(".toggle button").forEach(b => b.setAttribute("aria-pressed", b.dataset.phase === p));
   const t = tabData();
   svg.setAttribute("viewBox", t.view.join(" "));
-  $("#goalEyebrow").textContent = EYEBROW[v];
+  $("#goal").dataset.phase = p;
+  $("#goalEyebrow").textContent = EYEBROW[p];
   $("#goalWord").textContent = t.goal.replace(/\.$/, "");
   $("#goalText").textContent = t.goalText;
   renderJob();
-  applyMode();
+  const tac = view === "tactics";
+  $("#tgrid").hidden = !tac; $("#simgrid").hidden = tac;
+  if (tac) renderTactics();
+  else { buildChips(); startScenario(scIx[p] || 0); }
 }
-function applyMode(){
-  $("#modeTactics").setAttribute("aria-pressed", mode === "tactics");
-  $("#modeSim").setAttribute("aria-pressed", mode === "sim");
-  $("#tgrid").hidden = mode !== "tactics";
-  $("#simgrid").hidden = mode !== "sim";
-  if (view === "cards") return;
-  if (mode === "tactics") renderTactics();
-  else { buildChips(); startScenario(scIx[view] || 0); }
-}
-$("#modeTactics").onclick = () => { mode = "tactics"; store.set("wf-mode", mode); applyMode(); };
-$("#modeSim").onclick = () => { mode = "sim"; store.set("wf-mode", mode); applyMode(); };
+$$(".toggle button").forEach(b => b.onclick = () => setPhase(b.dataset.phase));
 
 function renderJob(){
   const job = $("#job");
@@ -197,9 +196,9 @@ function renderJob(){
   job.hidden = false;
   const c = CARD[me];
   $("#jobTitle").textContent = "Your job · " + nick(c);
-  $("#jobText").textContent = view === "without-ball" ? c.d : c.a;
+  $("#jobText").textContent = phase === "without-ball" ? c.d : c.a;
   const s = $("#jobSlot");
-  if (c.bench){ s.hidden = false; s.textContent = `On the bench you cover ${c.slot}. The orange dot is your slot when you come on.`; }
+  if (c.bench){ s.hidden = false; s.textContent = `On the bench you cover ${c.slot}. The red dot is your slot when you come on.`; }
   else s.hidden = true;
 }
 function buildChips(){
@@ -216,7 +215,7 @@ function buildChips(){
   });
 }
 function startScenario(k){
-  scIx[view] = k;
+  scIx[phase] = k;
   const s = scn();
   comp = compile(s);
   T = reduce ? comp.total : 0; lastTs = 0; lastCap = "";
@@ -232,7 +231,7 @@ function render(){
   for (const id in S.pos){ const p = S.pos[id]; P.pl[id].setAttribute("transform", `translate(${p[0].toFixed(2)} ${p[1].toFixed(2)})`); }
   P.ball.setAttribute("cx", S.ball[0]); P.ball.setAttribute("cy", S.ball[1]);
   P.shadow.setAttribute("cx", S.ball[0] + .5); P.shadow.setAttribute("cy", S.ball[1] + .7);
-  if (S.holder){ const p = S.pos[S.holder]; P.ring.setAttribute("cx", p[0]); P.ring.setAttribute("cy", p[1]); P.ring.setAttribute("stroke", isOpp(S.holder) ? "#FFB3AB" : "#FFFFFF"); P.ring.setAttribute("opacity", 1); }
+  if (S.holder){ const p = S.pos[S.holder]; P.ring.setAttribute("cx", p[0]); P.ring.setAttribute("cy", p[1]); P.ring.setAttribute("stroke", isOpp(S.holder) ? "#0E1626" : "#FFFFFF"); P.ring.setAttribute("opacity", 1); }
   else P.ring.setAttribute("opacity", 0);
   for (let k = 0; k < 3; k++){
     const ln = P.lines[k], st = comp.steps[S.idx - k];
@@ -247,7 +246,7 @@ function render(){
   P.team.back.setAttribute("points", poly(["OG","Taran","Yazan","Noah"], S.pos));
   P.team.mid.setAttribute("points", poly(["Mehmet","Yosof","Farhad","Sherif"], S.pos));
   P.team.fwd.setAttribute("points", poly(["Bryce","Sameed"], S.pos));
-  const st = comp.steps[S.idx], cap = S.idx + "|" + scIx[view];
+  const st = comp.steps[S.idx], cap = S.idx + "|" + scIx[phase];
   if (cap !== lastCap){
     lastCap = cap;
     $("#capScn").textContent = scn().name;
@@ -258,15 +257,15 @@ function render(){
   const r = $("#result");
   if (T >= comp.total - 900){ r.hidden = false; r.className = "result k-" + scn().result.kind; r.textContent = scn().result.text; }
   else r.hidden = true;
-  const chip = $$("#chips .chip")[scIx[view]];
+  const chip = $$("#chips .chip")[scIx[phase]];
   if (chip) chip.querySelector(".bar").style.width = Math.min(100, T / (comp.total + HOLD) * 100) + "%";
 }
 function frame(ts){
-  if (view !== "cards" && mode === "sim" && comp && !document.hidden && !reduce){
+  if (view === "simulations" && comp && !document.hidden && !reduce){
     if (!lastTs) lastTs = ts;
     T += Math.min(80, ts - lastTs);
     lastTs = ts;
-    if (T >= comp.total + HOLD) startScenario(((scIx[view] || 0) + 1) % tabData().scenarios.length);
+    if (T >= comp.total + HOLD) startScenario(((scIx[phase] || 0) + 1) % tabData().scenarios.length);
     else render();
   } else lastTs = 0;
   requestAnimationFrame(frame);
@@ -274,7 +273,7 @@ function frame(ts){
 $$(".tab").forEach(b => b.onclick = () => enterView(b.dataset.view));
 $(".tabs").addEventListener("keydown", e => {
   if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-  const n = VIEWS[(VIEWS.indexOf(view) + (e.key === "ArrowRight" ? 1 : 3)) % 4]; enterView(n); $(`.tab[data-view="${n}"]`).focus();
+  const n = VIEWS[(VIEWS.indexOf(view) + (e.key === "ArrowRight" ? 1 : 2)) % 3]; enterView(n); $(`.tab[data-view="${n}"]`).focus();
 });
 window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (VIEWS.includes(h) && h !== view) enterView(h); });
 
@@ -288,14 +287,14 @@ function cardSvg(c, m, big){
   s += `<g fill="none" stroke="#FFF" stroke-opacity=".2" stroke-width=".4">`;
   for (let n = 1; n <= 18; n++){ const q = cell(n); s += `<rect x="${q[0]}" y="${q[1]}" width="${q[2]}" height="${q[3]}"/>`; }
   s += `</g><g fill="none" stroke="#FFF" stroke-opacity=".55" stroke-width=".7"><rect x="2" y="2" width="96" height="136"/><rect x="21.5" y="2" width="57" height="22.4"/><rect x="21.5" y="115.6" width="57" height="22.4"/></g>`;
-  s += `<line x1="2" y1="70" x2="98" y2="70" stroke="#F2B134" stroke-width="1" stroke-dasharray="3 2"/>`;
-  s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#F2B134" fill-opacity=".45" stroke="#F2B134" stroke-width="1.2"/>`;
-  if (big) s += `<text x="${x + 2}" y="${y + 5.5}" font-size="5" font-weight="700" fill="#0B1F3A" font-family="Barlow, sans-serif">Z${Z[me_]}</text>`;
+  s += `<line x1="2" y1="70" x2="98" y2="70" stroke="#B9CCF7" stroke-width="1" stroke-dasharray="3 2"/>`;
+  s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#5B8DEF" fill-opacity=".55" stroke="#B9CCF7" stroke-width="1.2"/>`;
+  if (big) s += `<text x="${x + 2}" y="${y + 5.5}" font-size="5" font-weight="700" fill="#FFFFFF" font-family="Barlow, sans-serif">Z${Z[me_]}</text>`;
   for (const k in D) if (k !== me_ && !opt.has(k)) s += `<circle cx="${D[k][0]}" cy="${D[k][1]}" r="2.6" fill="#FFF" fill-opacity=".45"/>`;
   const [fx, fy] = D[me_];
-  c.p.forEach(o => o.to.forEach(k => { const [cx, cy] = D[k]; s += o.n === 1 ? `<line x1="${fx}" y1="${fy}" x2="${cx}" y2="${cy}" stroke="#F2B134" stroke-width="1.8"/>` : `<line x1="${fx}" y1="${fy}" x2="${cx}" y2="${cy}" stroke="#FFF" stroke-width="1.1" stroke-dasharray="3 2"/>`; }));
-  s += `<circle cx="${fx}" cy="${fy}" r="4.6" fill="#0B1F3A" stroke="#F2B134" stroke-width="1.6"/>`;
-  c.p.forEach(o => o.to.forEach(k => { const [cx, cy] = D[k]; s += `<circle cx="${cx}" cy="${cy}" r="5" fill="${o.n === 1 ? "#F2B134" : "#FFF"}" stroke="#0B1F3A" stroke-width=".8"/><text x="${cx}" y="${cy + 2}" text-anchor="middle" font-size="5.6" font-weight="800" fill="#0B1F3A" font-family="Barlow, sans-serif">${o.n}</text>`; }));
+  c.p.forEach(o => o.to.forEach(k => { const [cx, cy] = D[k]; s += o.n === 1 ? `<line x1="${fx}" y1="${fy}" x2="${cx}" y2="${cy}" stroke="#FF5A6E" stroke-width="1.8"/>` : `<line x1="${fx}" y1="${fy}" x2="${cx}" y2="${cy}" stroke="#FFF" stroke-width="1.1" stroke-dasharray="3 2"/>`; }));
+  s += `<circle cx="${fx}" cy="${fy}" r="4.6" fill="${INK}" stroke="#FFFFFF" stroke-width="1.6"/>`;
+  c.p.forEach(o => o.to.forEach(k => { const [cx, cy] = D[k]; s += `<circle cx="${cx}" cy="${cy}" r="5" fill="${o.n === 1 ? YOU : "#FFF"}" stroke="${INK}" stroke-width=".8"/><text x="${cx}" y="${cy + 2}" text-anchor="middle" font-size="5.6" font-weight="800" fill="${o.n === 1 ? "#FFF" : INK}" font-family="Barlow, sans-serif">${o.n}</text>`; }));
   return s + "</svg>";
 }
 function renderCards(){
@@ -337,7 +336,7 @@ buildPitch();
 renderCards();
 const h0 = location.hash.slice(1);
 view = null;
-enterView(VIEWS.includes(h0) ? h0 : "without-ball");
+enterView(VIEWS.includes(h0) ? h0 : "tactics");
 if (!me) openWelcome();
 requestAnimationFrame(frame);
 })();

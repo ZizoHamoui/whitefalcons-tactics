@@ -1,6 +1,6 @@
 // Coordinates: 100 x 140 pitch (x 2-98, y 2-138). We attack UP (their goal y=2). One unit is about 0.7 m.
 const OURS = ["Dyvane","Taran","Yazan","OG","Noah","Yosof","Farhad","Mehmet","Sherif","Bryce","Sameed"];
-const ROLE = {Dyvane:"GK",Taran:"LCB",Yazan:"RCB",OG:"LB",Noah:"RB",Yosof:"6",Farhad:"6",Mehmet:"LM",Sherif:"RM",Bryce:"ST",Sameed:"ST"};
+const ROLE = {Dyvane:"GK",Taran:"LCB",Yazan:"RCB",OG:"LB",Noah:"RB",Yosof:"CDM",Farhad:"CDM",Mehmet:"LM",Sherif:"RM",Bryce:"ST",Sameed:"ST"};
 // Passing options exactly as printed on the player role cards.
 const ALLOWED = {
   Dyvane:["Taran","Yazan","OG","Noah"], Taran:["Yosof","OG","Yazan"], Yazan:["Farhad","Noah","Taran"],
@@ -23,12 +23,12 @@ const TABS = [
 { id:"without-ball", name:"Without the ball", view:[0,-4,100,148],
   goal:"Defend.", goalText:"Keep the block compact, deny the shot, and win it when they make a mistake.",
   scenarios:[
-  { id:"shape", name:"Hold the shape", trigger:"They switch the play and probe the pocket in front of our 6s.",
-    coach:"The block moves as one unit and nobody chases the ball. The strikers cut the pass back, the 6s screen, and Noah wins it on the touchline when their winger over-runs it.",
+  { id:"shape", name:"Hold the shape", trigger:"They switch the play and probe the pocket in front of our CDMs.",
+    coach:"The block moves as one unit and nobody chases the ball. The strikers cut the pass back, the CDMs screen, and Noah wins it on the touchline when their winger over-runs it.",
     result:{text:"Ball won back. No shot conceded.",kind:"good"},
     setup:{ours:DEF,opp:OPP_ATT,ball:"o3"},
     steps:[
-    {b:["pass","o3","o4"],t:"They switch the play to our right. We shift six units across as one block. The strikers stay on the half line and cut the pass into their 6s.",
+    {b:["pass","o3","o4"],t:"They switch the play to our right. We shift six units across as one block. The strikers stay on the half line and cut the pass into their CDMs.",
      m:{Bryce:[47,62],Sameed:[65,62],Mehmet:[24,82],Yosof:[47,82],Farhad:[65,82],Sherif:[88,82],OG:[24,104],Taran:[47,104],Yazan:[65,104],Noah:[88,104],Dyvane:[54,126],o7:[44,70],o8:[68,70],o10:[42,92],o11:[70,92]}},
     {b:["pass","o4","o8"],t:"Forward into the pocket. Farhad steps up to screen and stays on his feet. Sameed shuts the pass back. Yosof covers inside.",
      m:{Farhad:[67,77],Sameed:[64,66],Yosof:[53,80],Bryce:[52,64],Taran:[49,104],Yazan:[66,104],o4:[63,58],o9:[90,78],o5:[92,70]}},
@@ -72,7 +72,7 @@ const TABS = [
      m:{Farhad:[62,86],Yosof:[48,82],OG:[20,102],Taran:[42,104],Yazan:[60,104],Sherif:[80,80],o10:[46,100],o7:[40,72]}}
     ]},
   { id:"recover", name:"We lose it up the pitch", trigger:"Sherif's pass is cut out at the edge of their box and they break.",
-    coach:"Five seconds, every time. The wide mids sprint back, the 6s screen, and the back four holds the line. No one dives in. We finish with nine outfielders behind the half line.",
+    coach:"Five seconds, every time. The wide mids sprint back, the CDMs screen, and the back four holds the line. No one dives in. We finish with nine outfielders behind the half line.",
     result:{text:"Counter stopped. No shot conceded.",kind:"good"},
     setup:{ours:FT,opp:OPP_LOW,ball:"Sherif"},
     steps:[
@@ -97,7 +97,7 @@ const TABS = [
     result:{text:"Seven passes, none lost. Ball held in their half.",kind:"good"},
     setup:{ours:BUILD,opp:OPP_MID,ball:"Dyvane"},
     steps:[
-    {b:["pass","Dyvane","Taran"],t:"Dyvane starts short to Taran. Their striker closes Taran and shadows Yosof, so Taran does not force the 6.",
+    {b:["pass","Dyvane","Taran"],t:"Dyvane starts short to Taran. Their striker closes Taran and shadows Yosof, so Taran does not force the CDM.",
      m:{Taran:[38,100],Dyvane:[50,120],OG:[18,95],Noah:[82,96],Yosof:[40,82],Farhad:[59,79],Mehmet:[18,74],o10:[40,90],o11:[57,82],o7:[40,55]}},
     {b:["pass","Taran","OG"],t:"Option 2: Taran plays wide to OG. OG controls it and waits for support.",
      m:{OG:[18,93],Taran:[38,98],Mehmet:[18,68],Yosof:[38,78],o10:[30,92],o6:[15,70],o7:[38,60]}},
@@ -131,7 +131,7 @@ const TABS = [
      m:{Sameed:[58,42],Sherif:[80,44],Mehmet:[22,40],Yosof:[46,56],Farhad:[60,64],Bryce:[42,36],o8:[62,46]}}
     ]},
   { id:"press", name:"Beat the press", trigger:"Their strikers press high and jump on Taran as soon as he gets it.",
-    coach:"One touch, sideways. Pressure on one side opens space on the other. We never go back to the keeper and never force the 6. The left opens up because they pressed right.",
+    coach:"One touch, sideways. Pressure on one side opens space on the other. We never go back to the keeper and never force the CDM. The left opens up because they pressed right.",
     result:{text:"Press beaten. Seven passes, none lost.",kind:"good"},
     setup:{ours:BUILD,opp:OPP_PRESS,ball:"Dyvane"},
     steps:[
@@ -191,12 +191,12 @@ const TABS = [
     {b:["shot","Sameed",[53,2],"save"],t:"Sameed hits it first time. Their keeper gets down and saves it. Farhad, Yosof and the back four never moved, so there is no break.",h:1100,
      m:{o1:[52,4],Yosof:[46,40],Farhad:[59,58],Sherif:[72,14],Bryce:[46,9],Mehmet:[28,16]}}
     ]},
-  { id:"pounce", name:"Pounce on a mistake", trigger:"Their 6 plays a lazy square pass in the middle.",
+  { id:"pounce", name:"Pounce on a mistake", trigger:"Their CDM plays a lazy square pass in the middle.",
     coach:"We do not chase. Yosof reads the pass, steps in and wins it. Sameed turns, Bryce times his run to stay onside, and Bryce places the finish. Guide it in.",
     result:{text:"GOAL. Bryce places it past the keeper.",kind:"goal"},
     setup:{ours:FT,opp:OPP_LOW,ball:"o8"},
     steps:[
-    {b:["pass","o8","Yosof"],t:"Their 6 plays a lazy square pass. Yosof reads it and steps across to cut it out.",
+    {b:["pass","o8","Yosof"],t:"Their CDM plays a lazy square pass. Yosof reads it and steps across to cut it out.",
      m:{Yosof:[50,43],Farhad:[58,60],Sherif:[78,32],Mehmet:[22,32],o7:[41,42],o8:[61,44]}},
     {b:["pass","Yosof","Sameed"],t:"Yosof plays it forward to Sameed, who receives on the turn. Their centre-back jumps out to him.",
      m:{Sameed:[56,36],o4:[60,31],Bryce:[43,29],Yosof:[48,43],Sherif:[78,31],Mehmet:[24,30]}},

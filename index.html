@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#3B5BA9">
 <meta name="description" content="White Falcons match plan: how we defend, keep the ball and create chances, plus every player's battle card.">
 <title>White Falcons Tactics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,25 +15,24 @@
 <header class="top">
   <div class="brand"><div class="crest" aria-hidden="true">WF</div><div><b>White Falcons</b><small>4-2-2-2 · Defend and control</small></div></div>
   <nav class="tabs" role="tablist" aria-label="Sections">
-    <button class="tab" role="tab" type="button" data-view="without-ball" aria-selected="true">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/></svg>Defend</button>
-    <button class="tab" role="tab" type="button" data-view="with-ball" aria-selected="false">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.2 2.3-1.2 3.8h-4l-1.2-3.8z"/></svg>Keep it</button>
-    <button class="tab" role="tab" type="button" data-view="final-third" aria-selected="false">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM8 6v5h8V6"/><circle cx="12" cy="15" r="1.2"/></svg>Final third</button>
-    <button class="tab" role="tab" type="button" data-view="cards" aria-selected="false">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="11" rx="2"/><rect x="13" y="9" width="8" height="11" rx="2"/></svg>Battle cards</button>
+    <button class="tab" role="tab" type="button" data-view="tactics" aria-selected="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 12h16"/><circle cx="12" cy="12" r="2.5"/></svg>Tactics</button>
+    <button class="tab" role="tab" type="button" data-view="simulations" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/></svg>Simulations</button>
+    <button class="tab" role="tab" type="button" data-view="instructions" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="11" rx="2"/><rect x="13" y="9" width="8" height="11" rx="2"/></svg>My instructions</button>
   </nav>
   <button class="me" id="meBtn" type="button" aria-label="Change player"><span class="who" id="meName">Pick player</span><span class="sw">Switch</span></button>
 </header>
 
 <main>
   <section id="viewSim" aria-live="off">
-    <div class="goal"><span class="eyebrow" id="goalEyebrow"></span><h1 id="goalWord"></h1><p id="goalText"></p></div>
-    <div class="toggle" role="group" aria-label="Show tactics or simulation">
-      <button type="button" id="modeTactics" aria-pressed="true">Tactics</button>
-      <button type="button" id="modeSim" aria-pressed="false">Simulation</button>
+    <div class="toggle" role="group" aria-label="Phase of play">
+      <button type="button" data-phase="with-ball" aria-pressed="true">With ball</button>
+      <button type="button" data-phase="without-ball" aria-pressed="false">Without ball</button>
+      <button type="button" data-phase="final-third" aria-pressed="false">Final third</button>
     </div>
+    <div class="goal" id="goal"><span class="eyebrow" id="goalEyebrow"></span><h1 id="goalWord"></h1><p id="goalText"></p></div>
     <div class="panel job" id="job"><h3 id="jobTitle">Your job</h3><p id="jobText"></p><p class="slot" id="jobSlot" hidden></p></div>
     <div class="tgrid" id="tgrid"></div>
     <div class="simgrid" id="simgrid" hidden>
@@ -50,9 +49,9 @@
       <div class="side">
         <div class="panel"><h3>What triggers it</h3><p id="trigger"></p><h3>What to coach</h3><p id="coach"></p></div>
         <div class="panel legend">
-          <span><i class="dot" style="background:#0B1F3A"></i>Us</span>
-          <span><i class="dot" style="background:#E4574B"></i>Them</span>
-          <span><i class="dot" style="background:#FF7A45"></i>You</span>
+          <span><i class="dot" style="background:#3B5BA9"></i>Us</span>
+          <span><i class="dot" style="background:#C3CAD8"></i>Them</span>
+          <span><i class="dot" style="background:#D7263D"></i>You</span>
           <span><i class="ln"></i>Forward pass</span>
           <span><i class="ln dash"></i>Sideways pass</span>
         </div>
@@ -61,7 +60,8 @@
   </section>
 
   <section id="viewCards" hidden>
-    <div class="cardshead"><h1>Battle cards</h1><p>Your card comes first. Tap any card to open it full size: where to stand, who to pass to, and your target for the match.</p></div>
+    <div class="cardshead"><h1>Battle cards</h1><p>Your card comes first. Every card shows where to stand, who to pass to, and the target for the match.</p>
+      <div class="cta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V12m0-1a1.5 1.5 0 0 1 3 0v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L4.5 15a1.5 1.5 0 0 1 2.4-1.8L9 15"/></svg><span><b>Click card to expand</b><small>Full zones, passing hints and your match target</small></span></div></div>
     <div class="grid" id="grid"></div>
   </section>
 </main>
