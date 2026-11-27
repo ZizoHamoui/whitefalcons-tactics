@@ -322,7 +322,7 @@ function openCard(c){
       <div class="maps"><figure><figcaption>Without the ball</figcaption>${cardSvg(c, "d", true)}<p>${esc(c.d)}</p></figure><figure><figcaption>With the ball</figcaption>${cardSvg(c, "a", true)}<p>${esc(c.a)}</p></figure></div>
       <div><h3>Passing options</h3><ol class="opts">${c.p.map(o => `<li><span class="num ${o.n === 1 ? "n1" : ""}">${o.n}</span><div><b>${esc(o.label)}</b><span>${esc(o.hint)}</span></div></li>`).join("")}</ol></div>
       <div class="target"><b>Match target</b>${esc(c.t)}</div>
-      ${mine && REPORTS[c.id] ? `<button class="myrep" type="button" id="cardRep">Open my report card</button>` : ""}
+      ${mine && REPORTS_ENC[c.id] ? `<button class="myrep" type="button" id="cardRep">Open my report card</button>` : ""}
       ${c.bench ? `<p class="hint">Bench: covers ${esc(c.slot)}'s position, so the zones and passes are ${esc(c.slot)}'s.</p>` : ""}
     </div></div>`;
   dlg.querySelector(".x").onclick = () => dlg.close();
@@ -334,7 +334,7 @@ dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
 // ---------- report card reminder ----------
 const dock = $("#rcDock");
 let dockTimer = 0;
-const hasReport = () => me && me !== "coach" && !!REPORTS[me];
+const hasReport = () => me && me !== "coach" && !!REPORTS_ENC[me];
 function setDock(state){ dock.dataset.state = state; $("#rcOpen").setAttribute("aria-label", state === "compact" ? "Open your report card" : "Open your report card: your season review"); }
 function showDock(){
   if (!hasReport()){ hideDock(); return; }
@@ -348,10 +348,60 @@ $("#rcMin").onclick = () => { clearTimeout(dockTimer); setDock("compact"); $("#r
 $("#rcOpen").onclick = () => openReport();
 window.addEventListener("scroll", () => { if (!dock.hidden && dock.dataset.state === "open" && window.scrollY > 120){ clearTimeout(dockTimer); setDock("compact"); } }, {passive: true});
 
-function openReport(){
-  const r = REPORTS[me]; if (!r) return;
-  store.set("wf-rep-seen-" + me, "1"); dock.dataset.seen = "1";
+// Reports are encrypted; a player's 6-character code derives the key in the browser.
+const ub64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const normCode = v => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+async function decryptReport(pid, code){
+  const e = REPORTS_ENC[pid];
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(code), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({name:"PBKDF2", salt:ub64(e.salt), iterations:REPORT_KDF_ITER, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:ub64(e.iv)}, key, ub64(e.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+function showDialog(label){ dlg.setAttribute("aria-label", label); if (!dlg.open){ if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); } }
+async function openReport(){
+  if (!hasReport()) return;
   clearTimeout(dockTimer); setDock("compact");
+  const saved = store.get("wf-code-" + me);
+  if (saved){
+    try { renderReport(await decryptReport(me, saved), true); return; }
+    catch(e){ try { localStorage.removeItem("wf-code-" + me); } catch(_){} }
+  }
+  codeScreen();
+}
+function codeScreen(){
+  dlg.innerHTML = `<div class="full rep lock"><div class="band"><div class="cue">PRIVATE · ${esc(nick(CARD[me]).toUpperCase())}</div><h2>Enter your access code</h2><div class="rl">Your report card is locked</div><button class="x" type="button" aria-label="Close">&#215;</button></div>
+    <form class="body" id="codeForm" novalidate>
+      <p>Type the 6-character code your coach sent you with the website link.</p>
+      <label class="codelbl" for="codeIn">Access code</label>
+      <input class="codein" id="codeIn" name="code" inputmode="text" autocomplete="one-time-code" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="7" placeholder="••••••" aria-describedby="codeMsg">
+      <p class="codemsg" id="codeMsg" role="status" aria-live="polite"></p>
+      <label class="remember" for="codeRem"><input type="checkbox" id="codeRem" checked> Remember on this phone</label>
+      <button class="go" id="codeGo" type="submit" disabled>Unlock report card</button>
+      <p class="note">No code? Ask your coach. Codes don't use 0, O, 1, I or L.</p>
+    </form></div>`;
+  dlg.querySelector(".x").onclick = () => dlg.close();
+  const inp = $("#codeIn"), go = $("#codeGo"), msg = $("#codeMsg");
+  inp.addEventListener("input", () => { const v = normCode(inp.value).slice(0, 6); if (inp.value !== v) inp.value = v; go.disabled = v.length !== 6; msg.textContent = ""; inp.classList.remove("bad"); });
+  $("#codeForm").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const code = normCode(inp.value); if (code.length !== 6) return;
+    go.disabled = true; go.textContent = "Checking…";
+    try {
+      const rep = await decryptReport(me, code);
+      if ($("#codeRem").checked) store.set("wf-code-" + me, code);
+      renderReport(rep, !!$("#codeRem").checked);
+    } catch(e){
+      go.disabled = false; go.textContent = "Unlock report card";
+      inp.classList.add("bad"); msg.textContent = "That code doesn't match. Check the message from your coach and try again.";
+      inp.select();
+    }
+  });
+  showDialog("Report card access code");
+  setTimeout(() => inp.focus(), 50);
+}
+function renderReport(r, remembered){
+  store.set("wf-rep-seen-" + me, "1"); dock.dataset.seen = "1";
   const s = r.s, f1 = v => v.toFixed(1), f2 = v => v.toFixed(2);
   const tile = (v, l) => `<div class="tile"><b>${v}</b><span>${l}</span></div>`;
   dlg.innerHTML = `<div class="full rep"><div class="band"><div class="cue">PLAYER PERFORMANCE REPORT</div><h2>${esc(r.name)}</h2><div class="rl">${esc(r.pos)} · Season to date</div><button class="x" type="button" aria-label="Close report card">&#215;</button></div>
@@ -363,11 +413,11 @@ function openReport(){
       </div>
       <div class="sect good"><h3>Strengths to highlight</h3><ul>${r.strengths.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>
       <div class="sect work"><h3>Areas for improvement</h3><ul>${r.improve.map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>
-      <p class="note">From your coach. Questions about it? Ask at training.</p>
+      <div class="repfoot"><p class="note">From your coach. Questions about it? Ask at training.</p>${remembered ? '<button class="lockbtn" type="button" id="lockBtn">Lock on this phone</button>' : ""}</div>
     </div></div>`;
-  dlg.setAttribute("aria-label", "Report card");
   dlg.querySelector(".x").onclick = () => dlg.close();
-  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+  const lb = $("#lockBtn"); if (lb) lb.onclick = () => { try { localStorage.removeItem("wf-code-" + me); } catch(e){} dlg.close(); };
+  showDialog("Report card");
 }
 dlg.addEventListener("close", () => { dlg.setAttribute("aria-label", "Battle card"); });
 
