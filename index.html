@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1F3A">
+<meta name="description" content="White Falcons match plan: how we defend, keep the ball and create chances, plus every player's battle card.">
+<title>White Falcons Tactics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><div class="crest" aria-hidden="true">WF</div><div><b>White Falcons</b><small>4-2-2-2 · Defend and control</small></div></div>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" type="button" data-view="without-ball" aria-selected="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/></svg>Defend</button>
+    <button class="tab" role="tab" type="button" data-view="with-ball" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5l3.2 2.3-1.2 3.8h-4l-1.2-3.8z"/></svg>Keep it</button>
+    <button class="tab" role="tab" type="button" data-view="final-third" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM8 6v5h8V6"/><circle cx="12" cy="15" r="1.2"/></svg>Final third</button>
+    <button class="tab" role="tab" type="button" data-view="cards" aria-selected="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="11" rx="2"/><rect x="13" y="9" width="8" height="11" rx="2"/></svg>Battle cards</button>
+  </nav>
+  <button class="me" id="meBtn" type="button" aria-label="Change player"><span class="who" id="meName">Pick player</span><span class="sw">Switch</span></button>
+</header>
+
+<main>
+  <section id="viewSim" aria-live="off">
+    <div class="goal"><span class="eyebrow" id="goalEyebrow"></span><h1 id="goalWord"></h1><p id="goalText"></p></div>
+    <div class="simgrid">
+      <div class="stage">
+        <div class="chips" id="chips" role="tablist" aria-label="Scenarios"></div>
+        <div class="pitchcard"><svg id="pitch" viewBox="0 -4 100 148" role="img" aria-label="Animated pitch. Our players in navy, theirs in red, the ball in white."></svg></div>
+        <div class="caption">
+          <div class="capmeta"><span class="scn" id="capScn"></span><span id="capStep"></span><span class="youtag" id="capYou" hidden>You</span></div>
+          <p id="capText"></p>
+          <p class="result" id="result" hidden></p>
+        </div>
+        <p class="hint">Plays on a loop through every scenario. Tap a scenario name to jump to it.</p>
+      </div>
+      <div class="side">
+        <div class="panel job" id="job"><h3 id="jobTitle">Your job</h3><p id="jobText"></p><p class="slot" id="jobSlot" hidden></p></div>
+        <div class="panel"><h3>What triggers it</h3><p id="trigger"></p><h3>What to coach</h3><p id="coach"></p></div>
+        <div class="panel legend">
+          <span><i class="dot" style="background:#0B1F3A"></i>Us</span>
+          <span><i class="dot" style="background:#E4574B"></i>Them</span>
+          <span><i class="dot" style="background:#F2B134"></i>You</span>
+          <span><i class="ln"></i>Forward pass</span>
+          <span><i class="ln dash"></i>Sideways pass</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="viewCards" hidden>
+    <div class="cardshead"><h1>Battle cards</h1><p>Your card comes first. Tap any card to open it full size: where to stand, who to pass to, and your target for the match.</p></div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<dialog id="dlg" aria-label="Battle card"></dialog>
+
+<div class="welcome" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wTitle" hidden>
+  <div class="wbox">
+    <div class="whead"><div class="crest" aria-hidden="true">WF</div><h1 id="wTitle">Who are <em>you?</em></h1><p>Tap yourself on the pitch. You'll be highlighted in every simulation, and your battle card goes first.</p></div>
+    <div class="wlabel">Starting XI · we attack upward &#8593;</div>
+    <div class="wpitch" id="wpitch"></div>
+    <div class="wlabel">Bench</div>
+    <div class="bench" id="wbench"></div>
+    <div class="wactions">
+      <button class="go" id="goBtn" type="button" disabled>Pick your position</button>
+      <button class="coach" id="coachBtn" type="button" aria-pressed="false">I'm the coach: show everyone</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/cards.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
