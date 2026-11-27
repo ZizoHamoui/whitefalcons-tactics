@@ -39,7 +39,7 @@ function buildSelect(){
   $("#goBtn").onclick = () => { if (s.value) chooseAndLoad(s.value); };
 }
 function openWelcome(){
-  hideDock();
+  hideDock(); closeGuide();
   const s = $("#playerSel");
   if (me){ s.value = me; s.classList.remove("empty"); $("#goBtn").disabled = false; }
   else { s.selectedIndex = 0; s.classList.add("empty"); $("#goBtn").disabled = true; }
@@ -57,10 +57,10 @@ function chooseAndLoad(v){
   const wait = reduce ? 300 : 1650;
   requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = "100%"; }));
   hideDock();
-  setTimeout(() => { L.classList.add("fade"); setTimeout(() => { L.hidden = true; document.body.style.overflow = ""; showDock(); }, reduce ? 0 : 350); }, wait);
+  setTimeout(() => { L.classList.add("fade"); setTimeout(() => { L.hidden = true; document.body.style.overflow = ""; showDock(); maybeGuide(); }, reduce ? 0 : 350); }, wait);
 }
 $("#meBtn").onclick = openWelcome;
-document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#welcome").hidden && me){ $("#welcome").hidden = true; document.body.style.overflow = ""; showDock(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#welcome").hidden && me){ $("#welcome").hidden = true; document.body.style.overflow = ""; showDock(); maybeGuide(); } });
 
 // ---------- shared pitch drawing ----------
 const COLX = [2,34,66,98], ROWY = [138,115.333,92.667,70,47.333,24.667,2];
@@ -152,10 +152,10 @@ function buildPitch(){
 }
 
 // ---------- views ----------
-const VIEWS = ["tactics","instructions","simulations"];
+const VIEWS = ["week","tactics","instructions","simulations"];
 const PHASES = ["without-ball","with-ball","final-third"];
 const EYEBROW = {"without-ball":"Without the ball","with-ball":"With the ball","final-third":"Final third"};
-let view = "tactics", phase = PHASES.includes(store.get("wf-phase")) ? store.get("wf-phase") : "without-ball";
+let view = "week", phase = PHASES.includes(store.get("wf-phase")) ? store.get("wf-phase") : "without-ball";
 let tabIx = 0, scIx = {}, comp = null, T = 0, lastTs = 0;
 const HOLD = 1600;
 const tabData = () => TABS[tabIx];
@@ -163,14 +163,15 @@ const scn = () => tabData().scenarios[scIx[phase] || 0];
 const involves = (st, id) => !!id && (st.from === id || st.to === id || new RegExp("\\b" + id + "\\b").test(st.text));
 
 function enterView(v){
-  if (!VIEWS.includes(v)) v = "tactics";
+  if (!VIEWS.includes(v)) v = "week";
   const changed = v !== view; view = v;
   $$(".tab").forEach(b => { const on = b.dataset.view === v; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; });
   try { if (location.hash.slice(1) !== v) history.replaceState(null, "", "#" + v); } catch(e){}
-  const isCards = v === "instructions";
-  $("#viewSim").hidden = isCards; $("#viewCards").hidden = !isCards;
+  $("#viewWeek").hidden = v !== "week"; $("#viewCards").hidden = v !== "instructions";
+  $("#viewSim").hidden = !(v === "tactics" || v === "simulations");
   if (changed) window.scrollTo(0, 0);
-  if (!isCards) setPhase(phase);
+  if (v === "week") renderWeek();
+  else if (v !== "instructions") setPhase(phase);
 }
 function setPhase(p){
   phase = p; store.set("wf-phase", p);
@@ -273,7 +274,7 @@ function frame(ts){
 $$(".tab").forEach(b => b.onclick = () => enterView(b.dataset.view));
 $(".tabs").addEventListener("keydown", e => {
   if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-  const n = VIEWS[(VIEWS.indexOf(view) + (e.key === "ArrowRight" ? 1 : 2)) % 3]; enterView(n); $(`.tab[data-view="${n}"]`).focus();
+  const n = VIEWS[(VIEWS.indexOf(view) + (e.key === "ArrowRight" ? 1 : 3)) % 4]; enterView(n); $(`.tab[data-view="${n}"]`).focus();
 });
 window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (VIEWS.includes(h) && h !== view) enterView(h); });
 
@@ -421,6 +422,216 @@ function renderReport(r, remembered){
 }
 dlg.addEventListener("close", () => { dlg.setAttribute("aria-label", "Battle card"); });
 
+// ---------- this week ----------
+const TEAM = "White Falcons FC";
+const pad = n => String(n).padStart(2, "0");
+function vanNow(){
+  const p = {}; new Intl.DateTimeFormat("en-CA", {timeZone:"America/Vancouver", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", hourCycle:"h23"}).formatToParts(new Date()).forEach(x => p[x.type] = x.value);
+  return {y:+p.year, m:+p.month, d:+p.day, iso:`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`};
+}
+const addDays = (y, m, d, n) => { const t = new Date(Date.UTC(y, m-1, d + n)); return `${t.getUTCFullYear()}-${pad(t.getUTCMonth()+1)}-${pad(t.getUTCDate())}`; };
+function weekInfo(){
+  const n = vanNow(), wd = new Date(Date.UTC(n.y, n.m-1, n.d)).getUTCDay();
+  const mon = addDays(n.y, n.m, n.d, -((wd + 6) % 7)), nextMon = addDays(+mon.slice(0,4), +mon.slice(5,7), +mon.slice(8,10), 7);
+  const idx = Math.round((Date.UTC(+mon.slice(0,4), +mon.slice(5,7)-1, +mon.slice(8,10)) - Date.UTC(2026,0,5)) / 6048e5);
+  const thisWeek = SCHEDULE.find(g => g.d >= mon && g.d < nextMon) || null;
+  const next = thisWeek || SCHEDULE.find(g => g.d >= n.iso) || null;
+  const after = next ? SCHEDULE.find(g => g.d > next.d) || null : null;
+  return {now:n.iso, key:mon, idx, match:next, inWeek:!!thisWeek, after};
+}
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtMatch(g){
+  const y = +g.d.slice(0,4), mo = +g.d.slice(5,7), da = +g.d.slice(8,10), hh = +g.d.slice(11,13), mi = g.d.slice(14,16);
+  const wd = new Date(Date.UTC(y, mo-1, da)).getUTCDay();
+  const home = g.home === TEAM, opp = home ? g.away : g.home;
+  return {opp, home, day:`${DAYS[wd]} ${da} ${MONTHS[mo-1]}`, dayLong:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][wd],
+    time:`${(hh % 12) || 12}:${mi} ${hh < 12 ? "AM" : "PM"}`, kit: home ? "Home kit: light navy blue shirt, black shorts" : "Away kit: red shirt, black shorts",
+    kitShort: home ? "light navy blue shirt and black shorts" : "red shirt and black shorts", kitColor: home ? "#3B5BA9" : "#D7263D"};
+}
+function countdown(g, nowIso){
+  const day = s => Date.UTC(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10));
+  const diff = Math.round((day(g.d) - day(nowIso)) / 864e5);
+  if (diff < 0 || (diff === 0 && nowIso > g.d)) return "Played";
+  return diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : `In ${diff} days`;
+}
+const initials = s => s.replace(/\bFC\b/g, "").trim().split(/\s+/).slice(0,2).map(w => w[0]).join("").toUpperCase();
+const crest = (name, ours) => ours ? `<img class="mc-badge" src="assets/badge.png" alt="White Falcons badge">` :
+  OPP_BADGES[name] ? `<img class="mc-badge" src="${OPP_BADGES[name]}" alt="${esc(name)} badge">` : `<span class="mc-badge mc-init" aria-hidden="true">${esc(initials(name))}</span>`;
+function renderWeek(){
+  const w = weekInfo(), box = $("#weekWrap"), player = me && me !== "coach";
+  let h = "";
+  if (!w.match){
+    h = `<div class="goal" data-phase="without-ball"><span class="eyebrow">This week</span><h1>No upcoming matches</h1><p>The schedule has no more fixtures. Check back when the next one is added.</p></div>`;
+  } else {
+    const f = fmtMatch(w.match), home = f.home;
+    const left = home ? TEAM : f.opp, right = home ? f.opp : TEAM;
+    h += `<article class="mc" id="matchCard" data-kit="${home ? "home" : "away"}">
+      <div class="mc-top"><span class="mc-label">${w.inWeek ? "This week's match" : "Next match"} · ${esc(w.match.comp)}</span><span class="mc-when">${esc(countdown(w.match, w.now))}</span></div>
+      <div class="mc-teams"><div class="mc-team">${crest(left, left === TEAM)}<b>${esc(left.replace(/ FC$/,""))}</b><small>Home</small></div><span class="mc-vs">vs</span><div class="mc-team">${crest(right, right === TEAM)}<b>${esc(right.replace(/ FC$/,""))}</b><small>Away</small></div></div>
+      <div class="mc-facts"><div><span>Date</span><b>${esc(f.day)}</b></div><div><span>Kick-off</span><b>${esc(f.time)}</b></div><div><span>Field</span><b>${esc(w.match.field)}</b></div></div>
+      <div class="mc-kit"><i class="kit-shirt" style="background:${f.kitColor}"></i><i class="kit-shorts"></i><span>${esc(f.kit)}</span></div>
+    </article>`;
+    if (w.after){ const a2 = fmtMatch(w.after); h += `<p class="after">After that: ${esc(a2.day)} vs ${esc(a2.opp)}, ${esc(a2.time)} at ${esc(w.after.field)}</p>`; }
+  }
+  if (player){
+    const done = !!store.get(guideKey());
+    h += `<div class="panel brief"><div><h3>Your briefing</h3><p>${done ? "Done for this week. Replay it any time before kick-off." : "Five quick steps: the match, your job without and with the ball, one scenario to watch, and a quick check."}</p></div><button class="go" type="button" id="briefBtn">${done ? "Replay briefing" : "Start briefing"}</button></div>`;
+  } else {
+    h += `<div class="panel"><h3>Coach view</h3><p>Players get a personal five-step briefing here each week. Pick a player with Switch to preview theirs.</p></div>`;
+  }
+  box.innerHTML = h;
+  const bb = $("#briefBtn"); if (bb) bb.onclick = () => openGuide(0);
+}
+
+// ---------- weekly briefing guide ----------
+const guide = $("#guide"), gTip = $("#gTip"), gHole = $("#gHole");
+let gSteps = [], gIx = 0, gTarget = null, gDot = null, gQuiz = null, gRaf = 0;
+const guideKey = () => "wf-guide-" + me + "-" + weekInfo().key;
+function bestScenario(id){
+  let best = null;
+  TABS.forEach(t => t.scenarios.forEach((sc, k) => {
+    const n = compile(sc).steps.filter(st => st.from === id || st.to === id).length;
+    if (!best || n > best.n) best = {phase:t.id, k, n, sc};
+  }));
+  return best;
+}
+function buildQuiz(c, w){
+  const kind = ["pass","zone","target"][((w.idx % 3) + 3) % 3];
+  const rot = (arr, n) => arr.map((_, i) => arr[(i + n) % arr.length]);
+  if (kind === "pass"){
+    const opts = c.p.map(o => o.label);
+    return {q:"With the ball, who is your first pass (option 1)?", answer:opts[0], opts:rot(opts, w.idx % 3), back:2};
+  }
+  if (kind === "zone"){
+    const z = C.ZD[c.slot], cands = [z+1, z-1, z+3, z-3].filter(n => n >= 1 && n <= 18 && n !== z);
+    const opts = [z, cands[0], cands[1]].map(n => "Zone " + n);
+    return {q:"Without the ball, which zone do you hold?", answer:"Zone " + z, opts:rot(opts, (w.idx + 1) % 3), back:1};
+  }
+  const others = C.CARDS.filter(x => x.t !== c.t).map(x => x.t).filter((t, i, s) => s.indexOf(t) === i);
+  const pick = [others[w.idx % others.length], others[(w.idx + 5) % others.length]];
+  return {q:"What is your match target this week?", answer:c.t, opts:rot([c.t, pick[0], pick[1]], (w.idx + 2) % 3), back:2};
+}
+function buildSteps(){
+  const c = CARD[me], slot = c.slot, w = weekInfo(), f = w.match ? fmtMatch(w.match) : null;
+  const pre = c.bench ? `If you come on for ${slot}: ` : "";
+  const sc = bestScenario(slot);
+  const opts = c.p.map(o => `<li><span class="num ${o.n === 1 ? "n1" : ""}">${o.n}</span><span><b>${esc(o.label)}</b> ${esc(o.hint)}</span></li>`).join("");
+  gQuiz = buildQuiz(c, w);
+  const s1 = f ? `<p><b>${esc(f.dayLong)} vs ${esc(f.opp)}</b>, kick-off ${esc(f.time)} at ${esc(w.match.field)}.</p><p>Wear the ${esc(f.kitShort)}.</p>` : `<p>No match is scheduled this week. Use the time to refresh your role.</p>`;
+  return [
+    {title: f ? "This week's match" : "This week", view:"week", target:"#matchCard",
+     body: s1 + (REPORTS_ENC[me] ? `<p class="g-rep">Your report card is ready. Open it from the button at the bottom right, with your access code.</p>` : "")},
+    {title:"Your job without the ball", view:"tactics", phase:"without-ball", target:"#tgrid .pv", dot:true,
+     body:`<p>${esc(pre + c.d)}</p><p class="g-small">Your red dot shows where you stand.</p>`},
+    {title:"Your job with the ball", view:"tactics", phase:"with-ball", target:"#tgrid .pv", dot:true,
+     body:`<p>${esc(pre + c.a)}</p><ol class="g-opts">${opts}</ol><p class="g-small"><b>Target:</b> ${esc(c.t)}</p>`},
+    {title:"Watch this: " + sc.sc.name, view:"simulations", phase:sc.phase, scen:sc.k, target:".pitchcard", sim:true,
+     body:`<p>${esc(sc.sc.trigger)}</p><p class="g-small">You're the red dot. Watch for the YOU tag under the pitch; the move loops.</p>`},
+    {title:"Quick check", view:"week", quiz:true, body:""}
+  ];
+}
+function maybeGuide(){
+  if (!me || me === "coach" || store.get(guideKey())) return;
+  setTimeout(() => { if ($("#welcome").hidden && $("#loading").hidden && !dlg.open) openGuide(0); }, 450);
+}
+function openGuide(i){
+  if (!me || me === "coach") return;
+  gSteps = buildSteps(); guide.hidden = false; document.body.classList.add("guiding"); hideDock();
+  goStep(i || 0);
+  cancelAnimationFrame(gRaf); const loop = () => { placeGuide(); gRaf = requestAnimationFrame(loop); }; gRaf = requestAnimationFrame(loop);
+}
+function closeGuide(){
+  if (guide.hidden) return;
+  guide.hidden = true; document.body.classList.remove("guiding"); cancelAnimationFrame(gRaf);
+  if (view === "week") renderWeek();
+  showDock();
+}
+function goStep(i){
+  gIx = Math.max(0, Math.min(gSteps.length - 1, i));
+  const st = gSteps[gIx];
+  if (view !== st.view) enterView(st.view);
+  if (st.phase && phase !== st.phase) setPhase(st.phase);
+  if (st.sim) startScenario(st.scen);
+  $("#gStep").textContent = `Step ${gIx + 1} of ${gSteps.length}`;
+  $("#gTitle").textContent = st.title;
+  $("#gDots").innerHTML = gSteps.map((_, k) => `<i class="${k === gIx ? "on" : k < gIx ? "done" : ""}"></i>`).join("");
+  $("#gBack").disabled = gIx === 0;
+  const next = $("#gNext");
+  if (st.quiz){ renderQuiz(); }
+  else { $("#gBody").innerHTML = st.body; next.disabled = false; next.textContent = "Next"; next.dataset.mode = "next"; }
+  gTarget = st.target ? $(st.target) : null;
+  gDot = st.dot || st.sim ? focus() : null;
+  gTip.classList.toggle("center", !gTarget);
+  requestAnimationFrame(() => requestAnimationFrame(() => { scrollToStep(st); setTimeout(() => $("#gNext").focus({preventScroll:true}), 30); }));
+}
+function renderQuiz(){
+  const q = gQuiz, done = !!store.get(guideKey()), next = $("#gNext");
+  $("#gBody").innerHTML = `<p class="g-q">${esc(q.q)}</p><div class="g-answers">${q.opts.map((o, k) => `<button type="button" class="g-ans" data-k="${k}">${esc(o)}</button>`).join("")}</div><p class="g-fb" id="gFb" role="status" aria-live="polite"></p>`;
+  next.dataset.mode = done ? "restart" : "locked"; next.textContent = done ? "Restart" : "Next"; next.disabled = !done;
+  $$(".g-ans").forEach(b => b.onclick = () => {
+    const ok = q.opts[+b.dataset.k] === q.answer, fb = $("#gFb");
+    $$(".g-ans").forEach(x => x.classList.remove("right", "wrong"));
+    b.classList.add(ok ? "right" : "wrong");
+    if (ok){
+      store.set(guideKey(), "1");
+      fb.className = "g-fb ok"; fb.textContent = "Spot on. You're ready for this week.";
+      next.disabled = false; next.textContent = "Restart"; next.dataset.mode = "restart"; next.focus();
+    } else {
+      fb.className = "g-fb no"; fb.innerHTML = `Not quite. Let's look again. <button type="button" class="g-link" id="gReplay">Show me step ${q.back + 1}</button>`;
+      $("#gReplay").onclick = () => goStep(q.back);
+    }
+  });
+}
+function svgPoint(svgEl, x, y){
+  const vb = svgEl.viewBox.baseVal, r = svgEl.getBoundingClientRect();
+  return [r.left + (x - vb.x) / vb.width * r.width, r.top + (y - vb.y) / vb.height * r.height];
+}
+function dotScreen(){
+  if (!gDot || !gTarget) return null;
+  if (gSteps[gIx].sim){ const g = P.pl[gDot]; if (!g) return null; const r = g.getBoundingClientRect(); return [r.left + r.width/2, r.top + r.height/2]; }
+  const svgEl = gTarget.querySelector("svg"); if (!svgEl) return null;
+  const pos = SHAPE[phase].pos()[gDot]; return pos ? svgPoint(svgEl, pos[0], pos[1]) : null;
+}
+const isPhone = () => window.innerWidth < 900;
+function scrollToStep(st){
+  if (!gTarget){ window.scrollTo({top:0, behavior:"auto"}); return; }
+  const head = $(".top").getBoundingClientRect().bottom, tipH = isPhone() ? gTip.getBoundingClientRect().height + 24 : 0;
+  const avail = window.innerHeight - tipH - head;
+  const r = gTarget.getBoundingClientRect(), d = dotScreen();
+  let delta;
+  if (d && r.height > avail) delta = d[1] - (head + avail * 0.45);
+  else delta = r.top - head - 12;
+  window.scrollBy({top: delta, behavior: reduce ? "auto" : "smooth"});
+}
+function placeGuide(){
+  if (guide.hidden) return;
+  if (gTarget && gTarget.isConnected){
+    const r = gTarget.getBoundingClientRect(), p = 6;
+    gHole.style.display = "block";
+    gHole.style.left = (r.left - p) + "px"; gHole.style.top = (r.top - p) + "px";
+    gHole.style.width = (r.width + 2*p) + "px"; gHole.style.height = (r.height + 2*p) + "px";
+    if (!isPhone()){
+      const tw = gTip.offsetWidth, th = gTip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+      let x = r.right + 20; if (x + tw > vw - 16) x = r.left - tw - 20; if (x < 16) x = Math.min(vw - tw - 16, Math.max(16, r.left));
+      let y = Math.max(84, Math.min(vh - th - 16, r.top));
+      gTip.style.left = x + "px"; gTip.style.top = y + "px";
+    } else { gTip.style.left = ""; gTip.style.top = ""; }
+  } else {
+    gHole.style.display = "none";
+    if (!isPhone()){ gTip.style.left = Math.round((window.innerWidth - gTip.offsetWidth) / 2) + "px"; gTip.style.top = Math.round((window.innerHeight - gTip.offsetHeight) / 2) + "px"; }
+    else { gTip.style.left = ""; gTip.style.top = ""; }
+  }
+}
+$("#gBack").onclick = () => goStep(gIx - 1);
+$("#gNext").onclick = () => { const m = $("#gNext").dataset.mode; if (m === "restart") goStep(0); else if (m === "next") goStep(gIx + 1); };
+$("#gX").onclick = closeGuide;
+document.addEventListener("keydown", e => {
+  if (guide.hidden) return;
+  if (e.key === "Escape") closeGuide();
+  else if (e.key === "ArrowRight" && !$("#gNext").disabled && e.target.tagName !== "INPUT") $("#gNext").click();
+  else if (e.key === "ArrowLeft" && gIx > 0) goStep(gIx - 1);
+});
+
 // ---------- start ----------
 buildSelect();
 if (me) $("#meName").textContent = meLabel();
@@ -428,7 +639,7 @@ buildPitch();
 renderCards();
 const h0 = location.hash.slice(1);
 view = null;
-enterView(VIEWS.includes(h0) ? h0 : "tactics");
-if (!me) openWelcome(); else showDock();
+enterView(VIEWS.includes(h0) ? h0 : "week");
+if (!me) openWelcome(); else { showDock(); maybeGuide(); }
 requestAnimationFrame(frame);
 })();
