@@ -378,7 +378,7 @@ function codeScreen(){
       <p class="codemsg" id="codeMsg" role="status" aria-live="polite"></p>
       <label class="remember" for="codeRem"><input type="checkbox" id="codeRem" checked> Remember on this phone</label>
       <button class="go" id="codeGo" type="submit" disabled>Unlock report card</button>
-      <p class="note">No code? Ask your coach. Codes don't use 0, O, 1, I or L.</p>
+      <p class="note">No code? Ask your coach.</p>
     </form></div>`;
   dlg.querySelector(".x").onclick = () => dlg.close();
   const inp = $("#codeIn"), go = $("#codeGo"), msg = $("#codeMsg");
