@@ -31,10 +31,8 @@ function meLabel(){
 // ---------- select the player ----------
 function buildSelect(){
   const s = $("#playerSel");
-  let h = '<option value="" disabled selected>Choose your name</option><optgroup label="Starting XI">';
-  STARTERS.forEach(c => h += `<option value="${c.id}">${esc(c.name)} · ${esc(shortRole(c))}</option>`);
-  h += '</optgroup><optgroup label="Bench">';
-  BENCH.forEach(c => h += `<option value="${c.id}">${esc(c.name)} · covers ${esc(c.slot)}</option>`);
+  let h = '<option value="" disabled selected>Choose your name</option><optgroup label="Players">';
+  STARTERS.concat(BENCH).forEach(c => h += `<option value="${c.id}">${esc(c.name)} · ${esc(c.bench ? shortRole(CARD[c.slot]) : shortRole(c))}</option>`);
   h += '</optgroup><optgroup label="Staff"><option value="coach">Coach view (no highlight)</option></optgroup>';
   s.innerHTML = h;
   s.onchange = () => { s.classList.toggle("empty", !s.value); $("#goBtn").disabled = !s.value; };
@@ -281,7 +279,7 @@ window.addEventListener("hashchange", () => { const h = location.hash.slice(1); 
 function cardSvg(c, m, big){
   const Z = m === "d" ? C.ZD : C.ZA, D = m === "d" ? C.DD : C.DA, me_ = c.slot;
   const [x,y,w,h] = cell(Z[me_]);
-  const opt = new Set(); c.p.forEach(o => o.to.forEach(k => opt.add(k)));
+  const opt = new Set(); if (m === "a") c.p.forEach(o => o.to.forEach(k => opt.add(k)));
   let s = `<svg viewBox="0 0 100 140" aria-hidden="true"><rect width="100" height="140" fill="#1D6446"/>`;
   s += `<rect x="2" y="2" width="96" height="68" fill="${m === "d" ? "#000" : "#FFF"}" fill-opacity="${m === "d" ? .25 : .08}"/>`;
   s += `<g fill="none" stroke="#FFF" stroke-opacity=".2" stroke-width=".4">`;
@@ -292,9 +290,9 @@ function cardSvg(c, m, big){
   if (big) s += `<text x="${x + 2}" y="${y + 5.5}" font-size="5" font-weight="700" fill="#FFFFFF" font-family="Barlow, sans-serif">Z${Z[me_]}</text>`;
   for (const k in D) if (k !== me_ && !opt.has(k)) s += `<circle cx="${D[k][0]}" cy="${D[k][1]}" r="2.6" fill="#FFF" fill-opacity=".45"/>`;
   const [fx, fy] = D[me_];
-  c.p.forEach(o => o.to.forEach(k => { const [cx, cy] = D[k]; s += o.n === 1 ? `<line x1="${fx}" y1="${fy}" x2="${cx}" y2="${cy}" stroke="#FF5A6E" stroke-width="1.8"/>` : `<line x1="${fx}" y1="${fy}" x2="${cx}" y2="${cy}" stroke="#FFF" stroke-width="1.1" stroke-dasharray="3 2"/>`; }));
+  if (m === "a") c.p.forEach(o => o.to.forEach(k => { const [cx, cy] = D[k]; s += o.n === 1 ? `<line x1="${fx}" y1="${fy}" x2="${cx}" y2="${cy}" stroke="#FF5A6E" stroke-width="1.8"/>` : `<line x1="${fx}" y1="${fy}" x2="${cx}" y2="${cy}" stroke="#FFF" stroke-width="1.1" stroke-dasharray="3 2"/>`; }));
   s += `<circle cx="${fx}" cy="${fy}" r="4.6" fill="${INK}" stroke="#FFFFFF" stroke-width="1.6"/>`;
-  c.p.forEach(o => o.to.forEach(k => { const [cx, cy] = D[k]; s += `<circle cx="${cx}" cy="${cy}" r="5" fill="${o.n === 1 ? YOU : "#FFF"}" stroke="${INK}" stroke-width=".8"/><text x="${cx}" y="${cy + 2}" text-anchor="middle" font-size="5.6" font-weight="800" fill="${o.n === 1 ? "#FFF" : INK}" font-family="Barlow, sans-serif">${o.n}</text>`; }));
+  if (m === "a") c.p.forEach(o => o.to.forEach(k => { const [cx, cy] = D[k]; s += `<circle cx="${cx}" cy="${cy}" r="5" fill="${o.n === 1 ? YOU : "#FFF"}" stroke="${INK}" stroke-width=".8"/><text x="${cx}" y="${cy + 2}" text-anchor="middle" font-size="5.6" font-weight="800" fill="${o.n === 1 ? "#FFF" : INK}" font-family="Barlow, sans-serif">${o.n}</text>`; }));
   return s + "</svg>";
 }
 function renderCards(){
