@@ -10,7 +10,7 @@ const ALLOWED = {
 };
 
 // ---- team shapes ----
-const DEF = {Dyvane:[50,126],OG:[18,104],Taran:[41,104],Yazan:[59,104],Noah:[82,104],Mehmet:[18,82],Yosof:[41,82],Farhad:[59,82],Sherif:[82,82],Bryce:[41,62],Sameed:[59,62]};
+const DEF = {Dyvane:[50,126],OG:[18,104],Taran:[41,104],Yazan:[59,104],Noah:[82,104],Mehmet:[18,82],Yosof:[38,84],Farhad:[62,84],Sherif:[82,82],Bryce:[47,62],Sameed:[50,72]};
 // With the ball: the head coach's 4-2-2-2 base setup.
 const BASE = {Bryce:[50,16],Sameed:[50,30],Mehmet:[18,60],Sherif:[82,60],Yosof:[38,76],Farhad:[62,76],OG:[12,90],Noah:[88,90],Taran:[37,100],Yazan:[63,100],Dyvane:[50,122]};
 const OPP_WB = {o1:[50,6],o2:[16,32],o3:[38,28],o4:[62,28],o5:[84,32],o6:[14,46],o7:[38,50],o8:[62,50],o9:[86,46],o10:[44,88],o11:[56,88]};
@@ -26,12 +26,12 @@ const TABS = [
   goal:"Defend.", goalText:"Keep the block compact, deny the shot, and win it when they make a mistake.",
   scenarios:[
   { id:"shape", name:"Hold the shape", trigger:"They switch the play and probe the pocket in front of our CDMs.",
-    coach:"The block moves as one unit and nobody chases the ball. The strikers cut the pass back, the CDMs screen, and Noah wins it on the touchline when their winger over-runs it.",
+    coach:"The block moves as one unit and nobody chases the ball. The ST and the deeper CAM/CF cut the pass back, the CDMs screen, and Noah wins it on the touchline when their winger over-runs it.",
     result:{text:"Ball won back. No shot conceded.",kind:"good"},
     setup:{ours:DEF,opp:OPP_ATT,ball:"o3"},
     steps:[
-    {b:["pass","o3","o4"],t:"They switch the play to our right. We shift six units across as one block. The strikers stay on the half line and cut the pass into their CDMs.",
-     m:{Bryce:[47,62],Sameed:[65,62],Mehmet:[24,82],Yosof:[47,82],Farhad:[65,82],Sherif:[88,82],OG:[24,104],Taran:[47,104],Yazan:[65,104],Noah:[88,104],Dyvane:[54,126],o7:[44,70],o8:[68,70],o10:[42,92],o11:[70,92]}},
+    {b:["pass","o3","o4"],t:"They switch the play to our right. We shift six units across as one block. The ST stays on the half line and CAM/CF drops just behind it to cut the pass into their CDMs.",
+     m:{Bryce:[53,62],Sameed:[60,73],Mehmet:[24,82],Yosof:[47,82],Farhad:[65,82],Sherif:[88,82],OG:[24,104],Taran:[47,104],Yazan:[65,104],Noah:[88,104],Dyvane:[54,126],o7:[44,70],o8:[68,70],o10:[42,92],o11:[70,92]}},
     {b:["pass","o4","o8"],t:"Forward into the pocket. Farhad steps up to screen and stays on his feet. Sameed shuts the pass back. Yosof covers inside.",
      m:{Farhad:[67,77],Sameed:[64,66],Yosof:[53,80],Bryce:[52,64],Taran:[49,104],Yazan:[66,104],o4:[63,58],o9:[90,78],o5:[92,70]}},
     {b:["pass","o8","o9"],t:"Wide again. Sherif tucks in and shows the winger down the line. Farhad drops back into the line. Noah stays goal-side.",
@@ -49,7 +49,7 @@ const TABS = [
     setup:{ours:DEF,opp:OPP_ATT,ball:"o7"},
     steps:[
     {b:["pass","o7","o6"],t:"They go long to their winger on our left. We shift left as a block. OG stays goal-side, Mehmet and Yosof squeeze across.",
-     m:{o6:[14,78],o2:[12,68],Bryce:[35,62],Sameed:[53,62],Mehmet:[20,82],Yosof:[35,82],Farhad:[53,82],Sherif:[76,82],OG:[20,104],Taran:[35,104],Yazan:[53,104],Noah:[76,104],Dyvane:[46,126]}},
+     m:{o6:[14,78],o2:[12,68],Bryce:[41,62],Sameed:[50,73],Mehmet:[20,82],Yosof:[35,82],Farhad:[53,82],Sherif:[76,82],OG:[20,104],Taran:[35,104],Yazan:[53,104],Noah:[76,104],Dyvane:[46,126]}},
     {b:["carry","o6"],t:"He runs at OG. OG holds his ground and shows him to the line. Mehmet tracks back and Yosof slides over.",
      m:{o6:[13,92],OG:[21,100],Mehmet:[21,88],Yosof:[30,86],Farhad:[48,84],Taran:[36,105],o10:[32,98],o11:[48,100],o9:[78,86],o7:[36,74],o8:[52,70]}},
     {b:["pass","o6","Taran"],t:"The cross comes in. Taran gets there first and heads it. Yazan marks the second striker and Noah covers the back post. Dyvane stays on his line.",

@@ -107,7 +107,7 @@ const youLabel = id => posOf(id);
 const FT_BOARD = {Bryce:[41,14],Sameed:[59,20],Mehmet:[18,30],Sherif:[82,30],Yosof:[44,43],Farhad:[59,63],OG:[18,89],Noah:[82,89],Taran:[38,98],Yazan:[62,98],Dyvane:[50,119]};
 const SHAPE = {
   "without-ball": {pos: () => C.DD, title: "Team shape without the ball",
-    rules: ["Everyone except Bryce and Sameed stays behind the half line.", "Move as one block toward the ball. Nobody chases.", "Win it when they make a mistake, then a safe first pass."]},
+    rules: ["Everyone except the ST stays behind the half line. CAM/CF drops just behind it to support the midfield.", "Move as one block toward the ball. Nobody chases.", "Win it when they make a mistake, then a safe first pass."]},
   "with-ball": {pos: () => WB_SHAPES[0].pos, title: "Team shape with the ball",
     rules: ["Pass sideways or forward. No rushing, no hopeful balls.", "When in doubt, lob the ball centrally behind the defense for Bryce or Sameed to catch.", "Once we're in their half, hold it there."]},
   "final-third": {pos: () => FT_BOARD, title: "How we hold their half",
